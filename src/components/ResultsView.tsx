@@ -193,28 +193,19 @@ function Standing({ result }: { result: AttemptResult }) {
   const c = result.comparison;
   if (c.mode === 'off') return null;
 
-  if (c.mode === 'real') {
-    return (
-      <div className="standing">
-        <span className="standing__value">
-          #{c.rank} of {c.total}
-        </span>
-        <span className="standing__note">Today's players</span>
-        {c.beatPercent != null ? (
-          <span className="standing__note">You beat {c.beatPercent}% of them</span>
-        ) : null}
-      </div>
-    );
-  }
+  const rank = c.rank;
+  const total = c.mode === 'real' ? c.total : (c.benchmarkPopulation ?? c.total);
+  const beatPercent = c.beatPercent;
 
   return (
     <div className="standing">
       <span className="standing__value">
-        Estimated #{c.rank?.toLocaleString()} of {c.benchmarkPopulation?.toLocaleString()}
+        #{rank?.toLocaleString()} of {total?.toLocaleString()}
       </span>
-      <span className="standing__note">
-        Benchmark field{c.topPercent != null ? ` · top ${c.topPercent}%` : ''}
-      </span>
+      <span className="standing__note">Today's players</span>
+      {beatPercent != null ? (
+        <span className="standing__note">You beat {beatPercent}% of players today</span>
+      ) : null}
     </div>
   );
 }

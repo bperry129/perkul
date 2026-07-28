@@ -493,7 +493,8 @@ export async function buildAttemptResult(
   const roundStatsEnabled = await flagEnabled('public_round_stats');
   const includeSimulated = await flagEnabled('simulated_data');
 
-  // Real sample size for today's game.
+  // When dummy players are on, we always include them in the sample so the
+  // 'real' comparison mode activates regardless of how many real players exist.
   const { data: statsData } = await serviceClient().rpc('daily_stats', {
     p_game_id: game.id,
     p_include_simulated: includeSimulated,
@@ -505,8 +506,15 @@ export async function buildAttemptResult(
 
   const benchmark = await getActiveBenchmark();
 
+  // When dummy players are enabled and there are enough players to rank against,
+  // always use 'real' mode so the rank shows "#X of Y today" not an estimate.
+  const effectiveMode =
+    includeSimulated && realSample >= Math.min(comparisonSettings.minimumRealSampleSize, 10)
+      ? 'real'
+      : comparisonSettings.mode;
+
   const decision = resolveComparisonSource({
-    mode: comparisonSettings.mode,
+    mode: effectiveMode,
     comparisonsEnabled: comparisonSettings.comparisonsEnabled,
     benchmarkEnabled: comparisonSettings.benchmarkEnabled,
     benchmarkPubliclyVisible: Boolean(benchmark?.publicly_visible),

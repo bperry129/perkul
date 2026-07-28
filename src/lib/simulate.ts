@@ -10,28 +10,45 @@ import {
 import { mulberry32, hashString, seededShuffle } from './shuffle';
 
 /**
- * QA / development only.
- *
- * Generates clearly flagged simulated attempts (is_simulated = true) so we can
- * exercise pagination, rank maths, percentiles and leaderboard performance at
- * realistic scale. Production UI filters these out unless an administrator
- * explicitly enables the simulated-data flag.
+ * Fills the leaderboard so early real players rank against a plausible field.
+ * 75% of entries have human-style usernames; 25% play as Guest.
  */
-const FIRST = [
-  'Lexicon', 'Word', 'Brume', 'Cavil', 'Frond', 'Sinew', 'Dearth', 'Riven',
-  'Crossword', 'Anagram', 'Etymo', 'Glyph', 'Serif', 'Rubric', 'Proof',
-  'Margin', 'Folio', 'Quire', 'Ligature', 'Kerning',
+
+// First-name style handles — what real users actually pick
+const NAME_A = [
+  'wordgirl', 'puzzledave', 'lexmagic', 'quickpen', 'bookworm88',
+  'verbhunter', 'inkblot99', 'spellbound', 'nerdbird', 'pageturner',
+  'definitely_', 'typoqueen', 'scrabbledad', 'glyphmaster', 'proofread_er',
+  'crypticat', 'thesaurus_rex', 'logophile', 'wordjock', 'syllable',
+  'grammarhammer', 'fakefinder', 'spelunker42', 'daily_vocab', 'lexiconliz',
+  'semanticsal', 'vocabvictor', 'parsepete', 'glossaryguy', 'syntaxsue',
+  'rhymetime', 'pangram_', 'homophones', 'apostrophe_', 'curly_quotes',
+  'em_dash', 'semicolons', 'ligature_', 'kernsmith', 'serifking',
+  'wordsmith_', 'anagramme', 'etym0quill', 'logodaedal', 'verbivore',
+  'puzzlequeen', 'cluemaster', 'riddlesmith', 'brainteaser', 'quizzikal',
+  'morningwords', 'lunchbreak_', 'nightowlreads', 'coffeeandwords', 'quietreader',
+  'slowreader99', 'fastreader', 'readitall', 'page_flicker', 'shelflife',
+  'marginnotes', 'dogear_', 'folioflip', 'bookmarkbob', 'spinecrack',
+  'chapter_two', 'prolouge', 'epilouge_', 'footnoted', 'endnote_',
+  'oxford_comma', 'chicago_style', 'apa_nerd', 'mlaforever', 'citationking',
+  'draftmode', 'seconddraft', 'redpen_', 'tracked_changes', 'sic_transit',
 ];
-const SECOND = [
-  'King', 'Nerd', 'Boy', 'Hunter', 'Dad', 'Mom', 'Fiend', 'Hound', 'Smith',
-  'Wright', 'Reader', 'Setter', 'Sleuth', 'Owl', 'Fox', 'Cat', 'Ghost',
-  'Machine', 'Pilgrim', 'Scribe',
+const NAME_B = [
+  '', '', '', '', '',  // blank = e.g. "wordgirl" alone
+  '7', '23', '99', '_', '__',
+  '1', '2', '4', '5', '8',
+  'x', 'z', '_x', '_z', 'xo',
 ];
 
-function simulatedName(rand: () => number, index: number): string {
-  const a = FIRST[Math.floor(rand() * FIRST.length)];
-  const b = SECOND[Math.floor(rand() * SECOND.length)];
-  return `${a}${b}${index % 97}`;
+/**
+ * Returns a display name for a simulated player.
+ * 75% get a human-style username, 25% are anonymous (null → "Guest").
+ */
+function simulatedName(rand: () => number): string | null {
+  if (rand() > 0.75) return null; // 25% anonymous
+  const a = NAME_A[Math.floor(rand() * NAME_A.length)];
+  const b = NAME_B[Math.floor(rand() * NAME_B.length)];
+  return `${a}${b}`;
 }
 
 export type SimulationResult = {
@@ -83,7 +100,7 @@ export async function generateSimulatedAttempts(
       game_id: gameId,
       user_id: null,
       anonymous_session_id: null,
-      display_name_override: simulatedName(rand, i),
+      display_name_override: simulatedName(rand),
       mode: 'ranked',
       is_ranked: true,
       is_simulated: true,

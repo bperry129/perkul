@@ -62,9 +62,29 @@ export async function setGameStatusAction(formData: FormData) {
 
   await setGameStatus(gameId, status);
   await logAdminAction(adminId, 'game.status', 'game', gameId, { status });
+
+  // Auto-generate dummy players when a game is published.
+  if (status === 'published') {
+    const { flagEnabled } = await import('@/lib/flags');
+    if (await flagEnabled('simulated_data')) {
+      const existing = await countSimulatedAttempts(gameId);
+      if (existing === 0) {
+        // Random between 200-500 to vary the daily count
+        const count = 200 + Math.floor(Math.random() * 301);
+        try {
+          await generateSimulatedAttempts(gameId, count);
+        } catch {
+          // Non-fatal: game still publishes even if dummy generation fails
+        }
+      }
+    }
+  }
+
   revalidatePath('/admin/games');
   revalidatePath(`/admin/games/${gameId}`);
+  revalidatePath('/admin/dummy-players');
   revalidatePath('/');
+  revalidatePath('/leaderboard');
 }
 
 export async function approveRoundAction(formData: FormData) {

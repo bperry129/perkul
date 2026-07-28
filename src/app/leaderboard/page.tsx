@@ -25,7 +25,6 @@ function Row({ row }: { row: LeaderboardRow }) {
       <td className="board__name">
         {row.displayName}
         {row.isYou ? <span className="label label--signal"> · you</span> : null}
-        {row.isSimulated ? <span className="label"> · simulated</span> : null}
       </td>
       <td className="board__score">{row.score.toLocaleString()}</td>
       <td>
@@ -108,7 +107,6 @@ export default async function LeaderboardPage({
         {board.total === 0
           ? 'No completed games yet today. Be first.'
           : `${board.total.toLocaleString()} ${board.total === 1 ? 'player' : 'players'} today`}
-        {board.includesSimulated ? ' · includes simulated QA data' : ''}
       </p>
 
       {board.total > 0 ? (
