@@ -26,6 +26,19 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
     return url.toString();
   };
 
+  /** Produce a human-readable message from whatever Supabase throws */
+  const extractMessage = (error: unknown, fallback: string): string => {
+    if (!error) return fallback;
+    const msg =
+      (error as { message?: string }).message ??
+      (error as { error_description?: string }).error_description ??
+      JSON.stringify(error);
+    // Supabase sometimes returns the raw JSON body '{}'  when SMTP fails —
+    // normalise that into a readable message.
+    if (!msg || msg === '{}' || msg === '{"message":""}') return fallback;
+    return msg;
+  };
+
   const signIn = async (event: React.FormEvent) => {
     event.preventDefault();
     setStatus('busy');
@@ -40,7 +53,7 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
       window.location.href = next;
     } catch (error) {
       setStatus('idle');
-      setMessage((error as Error).message || 'Could not sign in. Check your email and password.');
+      setMessage(extractMessage(error, 'Could not sign in. Check your email and password.'));
     }
   };
 
@@ -58,10 +71,19 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
           data: { display_name: displayName.trim() || null },
         },
       });
+
+      // If the user record was created (data.user exists) but email sending
+      // failed (SMTP error), still show the confirmation screen. The user
+      // exists; they can ask to resend from Supabase or wait for SMTP fix.
+      if (data?.user && !data?.session) {
+        setStatus('check-email');
+        return;
+      }
+
       if (error) throw error;
 
       // If email confirmation is disabled, Supabase returns a session immediately.
-      if (data.session) {
+      if (data?.session) {
         if (displayName.trim()) {
           await fetch('/api/profile', {
             method: 'POST',
@@ -71,12 +93,11 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
         }
         window.location.href = next;
       } else {
-        // Email confirmation required — show instructions.
         setStatus('check-email');
       }
     } catch (error) {
       setStatus('idle');
-      setMessage((error as Error).message || 'Could not create account. Try again.');
+      setMessage(extractMessage(error, 'Could not create account. Try again.'));
     }
   };
 
