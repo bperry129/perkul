@@ -10,10 +10,15 @@ export const dynamic = 'force-dynamic';
  * and nothing that reveals which one is fabricated.
  */
 export async function POST(request: Request) {
-  const body = await readJson<{ gameId?: string }>(request);
+  const body = await readJson<{ gameId?: string; practice?: boolean }>(request);
   const { identity, freshAnonId } = await resolveIdentity();
 
-  const outcome = await startAttempt(identity, { gameId: body?.gameId ?? null });
+  // When the client explicitly requests a practice replay (already played today),
+  // honour it unconditionally — no feature flag needed.
+  const outcome = await startAttempt(identity, {
+    gameId: body?.gameId ?? null,
+    allowPractice: body?.practice === true ? true : undefined,
+  });
 
   if (!outcome.ok) {
     return attachAnonCookie(fail(outcome.message, outcome.code, outcome.code === 'no_game' ? 404 : 409), freshAnonId);

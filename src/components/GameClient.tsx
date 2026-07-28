@@ -96,14 +96,14 @@ export function GameClient({
   const currentRound = attempt?.rounds[roundIndex] ?? null;
 
   /* ------------------------------------------------------------------ start */
-  const start = useCallback(async () => {
+  const start = useCallback(async (practice = false) => {
     setError(null);
     setPhase('starting');
     try {
       const response = await fetch('/api/attempt/start', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ gameId: game?.gameId }),
+        body: JSON.stringify({ gameId: game?.gameId, ...(practice ? { practice: true } : {}) }),
       });
       const payload = (await response.json()) as
         | { ok: true; attempt: ActiveAttemptPayload }
@@ -135,7 +135,7 @@ export function GameClient({
     setSelected(null);
     setError(null);
     answersRef.current = [];
-    void start();
+    void start(true); // explicitly request practice mode
   }, [start]);
 
   /* --------------------------------------------------------------- complete */
@@ -383,7 +383,7 @@ export function GameClient({
         <button
           type="button"
           className="action"
-          onClick={start}
+          onClick={() => start()}
           disabled={phase === 'starting' || !game}
         >
           {phase === 'starting' ? 'Starting...' : 'Start today\'s game'}
