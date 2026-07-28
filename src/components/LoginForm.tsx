@@ -29,12 +29,16 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
   /** Produce a human-readable message from whatever Supabase throws */
   const extractMessage = (error: unknown, fallback: string): string => {
     if (!error) return fallback;
+    // Log the full error in the browser console so we can diagnose issues.
+    console.error('[Auth error]', JSON.stringify(error));
     const msg =
       (error as { message?: string }).message ??
       (error as { error_description?: string }).error_description ??
-      JSON.stringify(error);
-    // Supabase sometimes returns the raw JSON body '{}'  when SMTP fails —
-    // normalise that into a readable message.
+      (error as { error?: string }).error ??
+      (error as { msg?: string }).msg ??
+      '';
+    // Supabase sometimes returns the raw JSON body '{}'  when SMTP fails
+    // or when email rate-limits are hit — normalise to the fallback.
     if (!msg || msg === '{}' || msg === '{"message":""}') return fallback;
     return msg;
   };
