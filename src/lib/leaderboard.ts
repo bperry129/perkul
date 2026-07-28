@@ -1,6 +1,7 @@
 import 'server-only';
 import { serviceClient } from './supabase/admin';
 import { flagEnabled } from './flags';
+import { perkulScore } from './scoring';
 import type { LeaderboardRow } from './types';
 
 export type LeaderboardPage = {
@@ -15,20 +16,26 @@ export type LeaderboardPage = {
 };
 
 function mapRow(row: Record<string, unknown>): LeaderboardRow {
+  const correctCount = Number(row.correct_count ?? 0);
+  const elapsedMs = Number(row.elapsed_ms ?? 0);
   return {
     rank: Number(row.rank),
     attemptId: row.attempt_id as string,
     displayName: (row.display_name as string) ?? 'Guest',
-    correctCount: Number(row.correct_count ?? 0),
-    elapsedMs: Number(row.elapsed_ms ?? 0),
+    correctCount,
+    elapsedMs,
+    // The DB has a generated `score` column; recompute as a fallback so an
+    // un-migrated database still renders instead of showing zeroes.
+    score: row.score != null ? Number(row.score) : perkulScore(correctCount, elapsedMs),
     isRegistered: Boolean(row.is_registered),
     isSimulated: Boolean(row.is_simulated),
   };
 }
 
 /**
- * Ranking is computed in Postgres (accuracy DESC, time ASC) and paginated
- * there too — the browser never receives thousands of rows.
+ * Ranking is computed in Postgres (Perkul score DESC, then time ASC) and
+ * paginated there too — the browser never receives thousands of rows. The SQL
+ * ordering must agree with compareRanked() in ./scoring.
  */
 export async function getLeaderboardPage(options: {
   gameId: string;

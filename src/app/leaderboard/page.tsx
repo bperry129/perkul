@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Leaderboard',
-  description: 'Today’s standings. Accuracy first, time second.',
+  description: 'Today’s standings. Most right, fastest, wins.',
 };
 
 function Row({ row }: { row: LeaderboardRow }) {
@@ -27,6 +27,7 @@ function Row({ row }: { row: LeaderboardRow }) {
         {row.isYou ? <span className="label label--signal"> · you</span> : null}
         {row.isSimulated ? <span className="label"> · simulated</span> : null}
       </td>
+      <td className="board__score">{row.score.toLocaleString()}</td>
       <td>
         {row.correctCount}/10
       </td>
@@ -99,7 +100,8 @@ export default async function LeaderboardPage({
         Today’s standings
       </h1>
       <p className="standfirst">
-        Most correct wins. Time only breaks ties — a 10/10 always finishes above every 9/10.
+        {BRAND.rule} Every correct answer is worth 1,000 points and every second costs 8, so
+        accuracy carries the day — but a game left open long enough will lose to a faster one.
       </p>
 
       <p className="label" style={{ marginTop: '1rem' }}>
@@ -116,6 +118,7 @@ export default async function LeaderboardPage({
               <th scope="col">#</th>
               <th scope="col">Player</th>
               <th scope="col">Score</th>
+              <th scope="col">Right</th>
               <th scope="col">Time</th>
             </tr>
           </thead>
@@ -126,7 +129,7 @@ export default async function LeaderboardPage({
             {showNeighbours ? (
               <>
                 <tr className="board__gap">
-                  <td colSpan={4}>· · ·</td>
+                  <td colSpan={5}>· · ·</td>
                 </tr>
                 {board.neighbours.map((row) => (
                   <Row key={`n-${row.attemptId}`} row={row} />

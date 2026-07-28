@@ -198,6 +198,8 @@ export type LeaderboardRow = {
   displayName: string;
   correctCount: number;
   elapsedMs: number;
+  /** Perkul score — the number the ladder is actually sorted on. */
+  score: number;
   isRegistered: boolean;
   isSimulated: boolean;
   isYou?: boolean;

@@ -2,10 +2,38 @@
  * Pure ranking, streak and integrity logic. No I/O, no Supabase — this file is
  * the game's rulebook and is covered directly by the test suite.
  *
- * THE fundamental rule: accuracy first, speed second. A 10/10 always beats a
- * 9/10 no matter the clock.
+ * THE RULE: most right in the least time wins.
+ *
+ * Ranking is by Perkul Score, not by accuracy alone. Each correct answer is
+ * worth CORRECT_POINTS, and every second on the clock costs POINTS_PER_SECOND.
+ * The two constants are chosen so that:
+ *
+ *   - Within normal play, accuracy still dominates. A 10/10 in 2:00 beats a
+ *     9/10 in 1:00, because one correct answer is worth ~125 seconds.
+ *   - A pathologically slow perfect game loses. A 10/10 that took an hour
+ *     ranks below a 9/10 that took a minute, which is the intended behaviour.
+ *
+ * Raising POINTS_PER_SECOND makes the game more of a race; lowering it moves
+ * back toward pure accuracy. Change these two numbers and the whole ladder
+ * retunes — but note the DB has a generated column using the same maths, so
+ * migrations/20260728120000_score.sql must be kept in step.
  */
 import { addDays } from './time';
+
+/** Points earned per correct answer. */
+export const CORRECT_POINTS = 1000;
+/** Points surrendered per second elapsed. 1000/8 => one answer ≈ 125 seconds. */
+export const POINTS_PER_SECOND = 8;
+
+/**
+ * The single number the leaderboard sorts on. Floored at zero so a very slow
+ * game reads as 0 rather than a confusing negative.
+ */
+export function perkulScore(correctCount: number, elapsedMs: number): number {
+  const gross = correctCount * CORRECT_POINTS;
+  const penalty = Math.round((Math.max(0, elapsedMs) / 1000) * POINTS_PER_SECOND);
+  return Math.max(0, gross - penalty);
+}
 
 export type RankableAttempt = {
   correctCount: number;
@@ -14,9 +42,13 @@ export type RankableAttempt = {
   completedAt?: string | number | null;
 };
 
+/** Higher score first; then the faster clock; then whoever finished first. */
 export function compareRanked(a: RankableAttempt, b: RankableAttempt): number {
-  if (b.correctCount !== a.correctCount) return b.correctCount - a.correctCount;
+  const as = perkulScore(a.correctCount, a.elapsedMs);
+  const bs = perkulScore(b.correctCount, b.elapsedMs);
+  if (as !== bs) return bs - as;
   if (a.elapsedMs !== b.elapsedMs) return a.elapsedMs - b.elapsedMs;
+  if (b.correctCount !== a.correctCount) return b.correctCount - a.correctCount;
   const at = a.completedAt ? new Date(a.completedAt).getTime() : 0;
   const bt = b.completedAt ? new Date(b.completedAt).getTime() : 0;
   return at - bt;

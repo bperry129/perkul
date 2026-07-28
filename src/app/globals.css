@@ -5,15 +5,24 @@
    =========================================================================== */
 
 :root {
-  --paper: #f6f3ec;
-  --paper-deep: #efeae0;
-  --ink: #16130f;
-  --ink-soft: #3d3831;
-  --gray: #8a8377;
-  --gray-light: #cec7ba;
-  --rule: #d6cfc2;
-  --signal: #c33a1e;
-  --signal-deep: #9c2c14;
+  --paper: #f7f4ee;
+  --paper-deep: #efe9df;
+  --ink: #17131a;
+  --ink-soft: #423b48;
+  --gray: #877f8e;
+  --gray-light: #cbc3d0;
+  --rule: #d7cfdb;
+  /* Signal: deep plum. Not orange, not blue, not a template gradient. */
+  --signal: #8a2e5d;
+  --signal-deep: #6b2148;
+  /* Warm gold, used for scores and live game furniture. */
+  --accent: #e0a93c;
+  --accent-deep: #b8862a;
+  /* Marks read semantically as well as by colour (✓ / ✕ shapes carry it too). */
+  --hit: #2f7d52;
+  --miss: #b23a5b;
+  --panel: #1d1822;
+  --panel-soft: #2a2331;
 
   --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua',
     'Hoefler Text', 'Times New Roman', Georgia, serif;

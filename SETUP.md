@@ -19,20 +19,32 @@ Follow these in order. Total time: about 5 minutes.
 
 ---
 
-## 2. Run the database migration
+## 2. Run the database migrations
+
+Run every file in `supabase/migrations/` **in filename order**. Today that is
+two files:
+
+| Order | File | What it does |
+| --- | --- | --- |
+| 1 | `20260701000000_init.sql` | The whole schema: tables, indexes, RLS, leaderboard functions, feature flags, benchmark population |
+| 2 | `20260728120000_score.sql` | Adds the generated `attempts.score` column and re-points the ranking functions at it |
+
+For each one:
 
 1. In the left sidebar, open **SQL Editor**.
 2. Click **New query**.
-3. Open `supabase/migrations/20260701000000_init.sql` from this project, select
-   **all** of it, and paste it into the editor.
+3. Open the file from this project, select **all** of it, and paste it into the
+   editor.
 4. Click **Run** (or press Ctrl+Enter).
 
-You should see `Success. No rows returned`. That single script creates every
-table, index, row-level-security policy, leaderboard function, feature flag and
-the benchmark population — the whole schema.
+You should see `Success. No rows returned` each time.
 
-> If you see an error mentioning `already exists`, the script has already been
-> run. That is harmless; skip to step 3.
+> If you see an error mentioning `already exists`, that script has already been
+> run. Both files are safe to re-run.
+
+A fresh `20260701000000_init.sql` already contains the score column, so on a
+brand-new project the second file is a no-op — but run it anyway rather than
+guessing.
 
 ---
 

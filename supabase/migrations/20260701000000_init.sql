@@ -222,6 +222,15 @@ create table if not exists public.attempts (
   integrity_notes       text,
   is_simulated          boolean not null default false,
   option_order          jsonb not null default '{}'::jsonb,
+  -- Perkul score: most right in the least time. Must mirror perkulScore() in
+  -- src/lib/scoring.ts (CORRECT_POINTS = 1000, POINTS_PER_SECOND = 8).
+  score                 integer generated always as (
+                          greatest(
+                            0,
+                            coalesce(correct_count, 0)::integer * 1000
+                              - round(coalesce(elapsed_ms, 0)::numeric / 1000.0 * 8)::integer
+                          )
+                        ) stored,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
@@ -235,9 +244,9 @@ create unique index if not exists attempts_one_ranked_anon_uidx
   on public.attempts (game_id, anonymous_session_id)
   where is_ranked and anonymous_session_id is not null and user_id is null and not is_simulated;
 
--- Leaderboard: accuracy first, time second.
-create index if not exists attempts_leaderboard_idx
-  on public.attempts (game_id, correct_count desc, elapsed_ms asc)
+-- Leaderboard: Perkul score first, then the faster clock.
+create index if not exists attempts_score_leaderboard_idx
+  on public.attempts (game_id, score desc, elapsed_ms asc)
   where is_ranked and completed_at is not null;
 
 create index if not exists attempts_user_game_idx on public.attempts (user_id, game_id);
@@ -357,7 +366,11 @@ create or replace view public.word_usage_history as
 -- ---------------------------------------------------------------------------
 -- ranking / stats functions (SECURITY DEFINER, no answer data exposed)
 -- ---------------------------------------------------------------------------
-create or replace function public.leaderboard_page(
+-- Dropped rather than replaced: the return type gained `score` in
+-- 20260728120000_score.sql, and `create or replace` cannot change it.
+drop function if exists public.leaderboard_page(uuid, integer, integer, boolean);
+
+create function public.leaderboard_page(
   p_game_id uuid,
   p_limit integer default 50,
   p_offset integer default 0,
@@ -369,6 +382,7 @@ returns table (
   display_name text,
   correct_count smallint,
   elapsed_ms integer,
+  score integer,
   is_simulated boolean,
   is_registered boolean
 )
@@ -384,6 +398,7 @@ language sql stable security definer set search_path = public as $$
       end as display_name,
       a.correct_count,
       a.elapsed_ms,
+      a.score,
       a.is_simulated,
       (a.user_id is not null) as is_registered,
       a.completed_at
@@ -398,8 +413,8 @@ language sql stable security definer set search_path = public as $$
       and coalesce(p.leaderboard_opt_in, true)
   )
   select
-    row_number() over (order by correct_count desc, elapsed_ms asc, completed_at asc) as rank,
-    id, display_name, correct_count, elapsed_ms, is_simulated, is_registered
+    row_number() over (order by score desc, elapsed_ms asc, completed_at asc) as rank,
+    id, display_name, correct_count, elapsed_ms, score, is_simulated, is_registered
   from eligible
   order by rank
   limit greatest(p_limit, 0) offset greatest(p_offset, 0);
@@ -409,11 +424,11 @@ create or replace function public.attempt_rank(p_attempt_id uuid, p_include_simu
 returns table (rank bigint, total bigint)
 language sql stable security definer set search_path = public as $$
   with me as (
-    select a.game_id, a.correct_count, a.elapsed_ms, a.completed_at
+    select a.game_id, a.score, a.elapsed_ms, a.completed_at
     from public.attempts a where a.id = p_attempt_id
   ),
   pool as (
-    select a.correct_count, a.elapsed_ms, a.completed_at
+    select a.score, a.elapsed_ms, a.completed_at
     from public.attempts a, me
     where a.game_id = me.game_id
       and a.is_ranked
@@ -423,7 +438,7 @@ language sql stable security definer set search_path = public as $$
   )
   select
     (select count(*) + 1 from pool p, me
-      where (p.correct_count, -p.elapsed_ms) > (me.correct_count, -me.elapsed_ms)) as rank,
+      where (p.score, -p.elapsed_ms) > (me.score, -me.elapsed_ms)) as rank,
     (select count(*) from pool) as total;
 $$;
 

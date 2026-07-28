@@ -14,7 +14,8 @@
     "seed:reset": "tsx scripts/seed.ts --reset",
     "admin:create": "tsx scripts/make-admin.ts",
     "content:check": "tsx scripts/validate-content.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "verify:score": "tsx scripts/verify-score.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

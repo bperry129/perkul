@@ -4,7 +4,7 @@
 
 Perkul is a daily timed vocabulary game. Ten rounds, five words per round, exactly one
 fabricated word in each. You get one choice per round, no feedback until the end.
-Accuracy wins; speed only breaks ties.
+**Most right, fastest, wins** — ranking is a single score, and the clock genuinely counts.
 
 - First game: **July 28, 2026** = Perkul **#001**
 - Seeded content bank: **20 games / 200 rounds / 1,000 options** (2026-07-28 → 2026-08-16)
@@ -42,7 +42,7 @@ cp .env.example .env.local   # then fill in your Supabase values
 
 ### 2.1 Create the database
 
-Either paste the migration into the Supabase SQL editor, or use the CLI:
+Either paste the migrations into the Supabase SQL editor, or use the CLI:
 
 ```bash
 # Option A — Supabase CLI (recommended)
@@ -50,12 +50,15 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 
 # Option B — manual
-# Open supabase/migrations/20260701000000_init.sql and run it in the SQL editor.
+# Run every file in supabase/migrations/ in filename order, in the SQL editor:
+#   20260701000000_init.sql    whole schema
+#   20260728120000_score.sql   generated score column + score-ordered ranking
 ```
 
-The migration creates every table, index, RLS policy, and the security-definer
+`init.sql` creates every table, index, RLS policy, and the security-definer
 functions used for leaderboards and aggregate statistics. It also seeds the
-feature flags, app settings, and the 6,000-run benchmark version.
+feature flags, app settings, and the 6,000-run benchmark version. Both files are
+idempotent and safe to re-run. `SETUP.md` walks through it click by click.
 
 ### 2.2 Seed the content bank
 
@@ -165,14 +168,33 @@ a server-side cookie match (`/api/attempt/claim`), not a browser-supplied attemp
 
 ## 6. Ranking
 
+**Most right, fastest, wins.** Every completed attempt gets one number:
+
+```
+score = max(0, correct × 1000 − seconds × 8)
+```
+
 Sorting is always:
 
-1. `correct_count DESC`
+1. `score DESC`
 2. `elapsed_ms ASC`
 3. `completed_at ASC`
 
-A 10/10 in 6 hours beats a 9/10 in 9 seconds. This is asserted in
-`tests/scoring.test.ts` and enforced by the SQL leaderboard function.
+One correct answer is worth about 125 seconds, so accuracy still dominates any
+normal game: a 10/10 in 2:00 (9,040) comfortably beats a 9/10 in 1:00 (8,520).
+But time genuinely counts — a 10/10 left open for an hour scores 0 and loses to
+that same 9/10. The crossover sits around four minutes, well outside real play.
+
+The formula exists twice and the two copies must stay in step:
+
+| Where | What |
+| --- | --- |
+| `src/lib/scoring.ts` | `perkulScore()`, `compareRanked()`, and the `CORRECT_POINTS` / `POINTS_PER_SECOND` constants |
+| `supabase/migrations/20260728120000_score.sql` | the generated `attempts.score` column that `leaderboard_page()` and `attempt_rank()` order by |
+
+Retuning the accuracy/speed balance is a two-number change in both places.
+`tests/scoring.test.ts` asserts the rule; `npm run verify:score` proves the live
+database agrees with the TypeScript comparator.
 
 Grades (`A+` … `F`) are cosmetic, accuracy-dominant, and configurable in
 Admin → Settings. They never affect ordering.
@@ -238,7 +260,7 @@ src/lib/public-payload   the only thing the browser is allowed to see
 src/content/             the authored 20-day bank + dev fixture (TOVEN/BRUME)
 src/app/                 public pages, /admin, /api route handlers
 src/components/          GameClient, ResultsView, Countdown, forms
-scripts/                 seed, make-admin, validate-content
+scripts/                 seed, make-admin, validate-content, smoke, verify-score
 tests/                   time, scoring, gameplay, content
 ```
 
@@ -251,8 +273,8 @@ npm test
 ```
 
 Covers NY date switching and DST boundaries, 10-round and one-fake enforcement,
-one-choice-per-round, accuracy calculation, leaderboard ordering (including
-10/10 > every 9/10), first-attempt-ranked and replay-unranked, expired games,
+one-choice-per-round, accuracy calculation, score-based leaderboard ordering
+(including the slow-perfect-game case), first-attempt-ranked and replay-unranked, expired games,
 anonymous claiming, answer data never reaching the client, feature flags, the
 comparison sample threshold, deterministic benchmark ranking, import validation,
 duplicate fake detection, and a full audit of the 200 seeded rounds.
@@ -264,7 +286,8 @@ duplicate fake detection, and a full audit of the 200 seeded rounds.
 1. Push to GitHub and import the repo in Vercel.
 2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL` (`https://perkul.com`).
-3. Run the migration and `npm run seed` against the production project.
+3. Run every migration in `supabase/migrations/` (filename order) and
+   `npm run seed` against the production project, then `npm run verify:score`.
 4. Supabase → Auth → URL Configuration: add `https://perkul.com/auth/callback`.
 5. Enable Google in Supabase → Auth → Providers.
 6. Promote your admin account, then confirm `/admin` loads and `/` shows game #001.

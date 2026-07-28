@@ -8,17 +8,25 @@ export const BRAND = {
   domain: 'perkul.com',
   internalCodename: 'FALSE',
   tagline: 'One of these words isn’t real.',
-  subline: '10 rounds. 5 words each. Choose the fake.',
-  rule: 'Accuracy wins. Speed breaks ties.',
+  subline: '10 rounds. 5 words each. Choose the fake word.',
+  /** The competitive promise, in one line. */
+  rule: 'Most right, fastest, wins.',
+  cadence: 'One new quiz per day. Updated at 12:00 AM ET.',
   timezone: 'America/New_York',
   firstGameDate: '2026-07-28',
   roundsPerGame: 10,
   optionsPerRound: 5,
+  /**
+   * Public game numbering starts here. The first published date is game #210
+   * rather than #001 — the archive numbering is cosmetic and deliberately
+   * offset. active_date remains the real identity of a game.
+   */
+  firstGameNumber: 210,
 } as const;
 
 export const BRAND_UPPER = BRAND.name.toUpperCase();
 
-/** "PERKUL #001" */
+/** "PERKUL #210" */
 export function gameLabel(gameNumber: number): string {
   return `${BRAND_UPPER} #${padGameNumber(gameNumber)}`;
 }

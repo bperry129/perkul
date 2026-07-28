@@ -31,8 +31,10 @@ Working and verified end-to-end:
 
 ## 2. UNCOMMITTED WORK IN THE TREE — READ THIS FIRST
 
-`git status` is **dirty**. Three files were edited and **never committed or pushed.**
-Production is running the last pushed commit (`1417ad8`) and is unaffected.
+`git status` is **dirty** and nothing has been pushed yet. Production is running the
+last pushed commit (`1417ad8`) and is unaffected.
+
+Originally edited, still uncommitted:
 
 | File | Change |
 |---|---|
@@ -40,15 +42,22 @@ Production is running the last pushed commit (`1417ad8`) and is unaffected.
 | `src/lib/scoring.ts` | New `perkulScore()` + `compareRanked()` now ranks by score |
 | `src/app/globals.css` | New plum/gold palette replacing orange |
 
-**The tree is intentionally inconsistent right now.** Two known consequences:
+Added since (TODO item 1, see below):
 
-1. **`npm test` FAILS.** `tests/scoring.test.ts` and `tests/gameplay.test.ts` assert
-   the OLD rule ("a 10/10 always beats a 9/10 regardless of time"). The owner has
-   deliberately reversed that rule. These assertions must be **rewritten, not
-   reverted**. Failures here are expected until item 2 below is done.
-2. **The new score formula is not live.** Ranking is ordered in SQL, so editing the
-   TypeScript comparator alone does not move the leaderboard. Needs the migration in
-   item 1 below.
+| File | Change |
+|---|---|
+| `supabase/migrations/20260728120000_score.sql` | **NEW** generated `score` column, score index, `leaderboard_page()` + `attempt_rank()` re-pointed at it |
+| `supabase/migrations/20260701000000_init.sql` | same changes folded in so fresh installs match |
+| `scripts/verify-score.ts` + `package.json` | **NEW** `npm run verify:score` |
+| `src/lib/types.ts`, `src/lib/leaderboard.ts`, `src/app/leaderboard/page.tsx` | `score` carried through and shown as its own column; ranking copy corrected |
+| `README.md`, `SETUP.md` | new rule + two-migration setup documented |
+
+**The tree is still intentionally inconsistent in one place:**
+
+**`npm test` FAILS.** `tests/scoring.test.ts` and `tests/gameplay.test.ts` assert the
+OLD rule ("a 10/10 always beats a 9/10 regardless of time"). The owner has deliberately
+reversed that rule. These assertions must be **rewritten, not reverted**. Failures here
+are expected until item 2 below is done.
 
 Do not `git checkout` these files. Build on them.
 
@@ -83,17 +92,29 @@ hazard introduced by this design.
 
 ## 4. TODO — IN ORDER
 
-### 1. Make the score formula live (do this first; everything else is cosmetic)
-New migration `supabase/migrations/20260728120000_score.sql`:
-- Add generated stored column to `attempts`:
-  `score int generated always as (greatest(0, correct_count * 1000 - round(elapsed_ms / 1000.0 * 8)::int)) stored`
-- Index `(game_id, score desc, elapsed_ms asc)`
-- `create or replace` **both** `leaderboard_page()` and `attempt_rank()` in
-  `20260701000000_init.sql` to order by `score desc, elapsed_ms asc` instead of
-  `correct_count desc, elapsed_ms asc`
-- Apply it, then confirm the ladder with a hand-built pair of attempts
+### 1. Make the score formula live — CODE DONE, NEEDS APPLYING
+Written and typechecked. `supabase/migrations/20260728120000_score.sql` adds the
+generated `score` column, the `(game_id, score desc, elapsed_ms asc)` index, and
+re-creates `leaderboard_page()` (which now also *returns* score, so the ladder shows
+the number it sorts on) and `attempt_rank()`. `init.sql` carries the same changes for
+fresh installs. Both files are idempotent.
 
-### 2. Rewrite the ranking tests to the new rule
+**Remaining, owner action — there is no Supabase CLI or DB URL on this machine:**
+
+1. Supabase → SQL Editor → New query → paste all of
+   `supabase/migrations/20260728120000_score.sql` → Run. Expect
+   `Success. No rows returned`.
+2. `npm run verify:score` — inserts a 10/10-in-an-hour and a 9/10-in-a-minute as
+   simulated attempts, checks the SQL score matches `perkulScore()` exactly, checks the
+   fast 9/10 outranks the slow perfect game in both `leaderboard_page()` and
+   `attempt_rank()`, checks the whole page agrees with `compareRanked()`, then deletes
+   both probes. All PASS = the ladder is live.
+
+Until step 1 runs, `leaderboard_page` still has its old signature and the leaderboard
+falls back to computing the score in TypeScript for display (ordering will still be the
+old accuracy-first one, because that ordering lives in SQL).
+
+### 2. Rewrite the ranking tests to the new rule  ← START HERE
 In `tests/scoring.test.ts` / `tests/gameplay.test.ts`, replace the
 "10/10 always wins" assertions with:
 - 10/10 @ 2:00 ranks above 9/10 @ 1:00
@@ -101,6 +122,14 @@ In `tests/scoring.test.ts` / `tests/gameplay.test.ts`, replace the
 - `perkulScore()` never returns negative
 - TS `compareRanked()` and the SQL ordering agree on the same fixture set
 Then `npm test` must pass.
+
+While in there, two known stragglers from the old accuracy-absolute rule:
+- `buildPersonalRecords()` in `src/lib/attempts.ts` (~line 718) still decides
+  `isBestScore` with `correct_count DESC, elapsed_ms ASC`. Use `compareRanked()`.
+- `estimateBenchmarkRank()` in `src/lib/benchmark.ts` deliberately carves accuracy
+  bands first, so no amount of speed crosses a band. That is a close approximation of
+  the score ladder inside normal play (the crossover is ~4 min), but its comment claims
+  it as a rule. Either reword the comment or move it onto `perkulScore()`.
 
 ### 3. Renumber games to #210–#229
 `BRAND.firstGameNumber = 210` exists but nothing consumes it yet.
@@ -110,6 +139,8 @@ Then `npm test` must pass.
 - Check `padGameNumber()` still renders sensibly at 3 digits
 
 ### 4. Game-like visual pass
+`.board__score` on the leaderboard is currently an unstyled hook — give the score
+column the gold/bold treatment while you are in `globals.css`.
 The owner's words: *"looks NYT-esque, simple and fast — just make it more game-like,
 not like reading a newspaper."* Keep it fast and typographic; **do not** introduce
 gradients, glassmorphism, rounded-card spam, or an animation library (spec §52 still
