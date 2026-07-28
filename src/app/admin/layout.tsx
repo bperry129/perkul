@@ -19,6 +19,7 @@ const NAV = [
   ['/admin/attempts', 'Attempts'],
   ['/admin/analytics', 'Analytics'],
   ['/admin/comparisons', 'Comparisons'],
+  ['/admin/dummy-players', 'Dummy Players'],
   ['/admin/flags', 'Feature flags'],
   ['/admin/settings', 'Settings'],
 ] as const;

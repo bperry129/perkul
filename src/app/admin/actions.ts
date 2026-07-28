@@ -11,7 +11,7 @@ import { validateBank, validateGame, summarizeBank } from '@/lib/validation';
 import { parseBankText } from '@/lib/import-schema';
 import { buildGenerationPrompt } from '@/lib/prompt';
 import { setFlag } from '@/lib/flags';
-import { deleteSimulatedAttempts, generateSimulatedAttempts } from '@/lib/simulate';
+import { deleteSimulatedAttempts, generateSimulatedAttempts, countSimulatedAttempts } from '@/lib/simulate';
 import { normalizeWord } from '@/lib/content/draft';
 import type { GameStatus, RoundType } from '@/lib/types';
 
@@ -381,6 +381,7 @@ export async function simulateAction(formData: FormData) {
   const outcome = await generateSimulatedAttempts(gameId, count);
   await logAdminAction(adminId, 'simulate.generate', 'game', gameId, outcome);
   revalidatePath('/admin/comparisons');
+  revalidatePath('/admin/dummy-players');
   revalidatePath('/admin');
   revalidatePath('/leaderboard');
 }
@@ -391,6 +392,38 @@ export async function deleteSimulatedAction(formData: FormData) {
   const removed = await deleteSimulatedAttempts(gameId);
   await logAdminAction(adminId, 'simulate.delete', 'game', gameId, { removed });
   revalidatePath('/admin/comparisons');
+  revalidatePath('/admin/dummy-players');
+  revalidatePath('/admin');
+  revalidatePath('/leaderboard');
+}
+
+/**
+ * Generate dummy players for ALL published games at once.
+ * Tops each game up to `count` simulated attempts rather than adding blindly.
+ */
+export async function generateAllSimulatedAction(formData: FormData) {
+  const adminId = await guard();
+  const perGame = Math.min(1000, Math.max(100, num(formData, 'count', 300)));
+
+  const { data: games } = await serviceClient()
+    .from('games')
+    .select('id')
+    .eq('status', 'published');
+
+  if (!games?.length) return;
+
+  let totalAdded = 0;
+  for (const game of (games as Array<{ id: string }>)) {
+    const existing = await countSimulatedAttempts(game.id);
+    const needed = Math.max(0, perGame - existing);
+    if (needed > 0) {
+      const result = await generateSimulatedAttempts(game.id, needed);
+      totalAdded += result.attempts;
+    }
+  }
+
+  await logAdminAction(adminId, 'simulate.generate_all', 'game', null, { totalAdded, perGame });
+  revalidatePath('/admin/dummy-players');
   revalidatePath('/admin');
   revalidatePath('/leaderboard');
 }
