@@ -4,21 +4,19 @@ import { useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
- * Email magic link + Password + Google.
- *
- * redirectTo uses NEXT_PUBLIC_SITE_URL so that magic links always point at
- * the production domain regardless of where the page was SSR'd. If the env
- * var is not set, window.location.origin is the correct fallback for local dev.
+ * Unified sign-in / create-account form.
+ * No magic links. No Google. Just email + password.
+ * Sign-up collects a leaderboard display name upfront.
  */
 export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
-  const [mode, setMode] = useState<'password' | 'link'>('password');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [displayName, setDisplayName] = useState('');
+  const [status, setStatus] = useState<'idle' | 'busy' | 'check-email'>('idle');
   const [message, setMessage] = useState<string | null>(null);
 
   const redirectTo = () => {
-    // Use the configured site URL so production magic links never point at localhost.
     const base =
       (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '') ||
       (typeof window !== 'undefined' ? window.location.origin : '');
@@ -28,9 +26,9 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
     return url.toString();
   };
 
-  const signInWithPassword = async (event: React.FormEvent) => {
+  const signIn = async (event: React.FormEvent) => {
     event.preventDefault();
-    setStatus('sending');
+    setStatus('busy');
     setMessage(null);
     try {
       const supabase = createSupabaseBrowserClient();
@@ -39,77 +37,79 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
         password,
       });
       if (error) throw error;
-      // Redirect on success
       window.location.href = next;
     } catch (error) {
-      setStatus('error');
+      setStatus('idle');
       setMessage((error as Error).message || 'Could not sign in. Check your email and password.');
     }
   };
 
-  const sendLink = async (event: React.FormEvent) => {
+  const createAccount = async (event: React.FormEvent) => {
     event.preventDefault();
-    setStatus('sending');
+    setStatus('busy');
     setMessage(null);
     try {
       const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithOtp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
-        options: { emailRedirectTo: redirectTo() },
+        password,
+        options: {
+          emailRedirectTo: redirectTo(),
+          data: { display_name: displayName.trim() || null },
+        },
       });
       if (error) throw error;
-      setStatus('sent');
+
+      // If email confirmation is disabled, Supabase returns a session immediately.
+      if (data.session) {
+        if (displayName.trim()) {
+          await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ displayName: displayName.trim(), leaderboardOptIn: true }),
+          });
+        }
+        window.location.href = next;
+      } else {
+        // Email confirmation required — show instructions.
+        setStatus('check-email');
+      }
     } catch (error) {
-      setStatus('error');
-      setMessage((error as Error).message || 'Could not send the link.');
+      setStatus('idle');
+      setMessage((error as Error).message || 'Could not create account. Try again.');
     }
   };
 
-  const google = async () => {
-    setMessage(null);
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: redirectTo() },
-      });
-      if (error) throw error;
-    } catch (error) {
-      setStatus('error');
-      setMessage((error as Error).message || 'Google sign-in is unavailable.');
-    }
-  };
+  /* ---------------------------------------------------------------- states */
 
-  if (status === 'sent') {
+  if (status === 'check-email') {
     return (
-      <div className="notice notice--quiet">
-        Check <strong>{email}</strong> for a sign-in link. It opens straight back into your account.
+      <div>
+        <div className="notice notice--quiet">
+          <strong>Check your inbox.</strong> We sent a confirmation link to{' '}
+          <strong>{email}</strong>. Click it to activate your account — you will be
+          signed in and your name will be saved automatically.
+        </div>
+        <p className="label" style={{ marginTop: '1rem' }}>
+          Wrong address?{' '}
+          <button
+            type="button"
+            style={{ font: 'inherit', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0, color: 'inherit' }}
+            onClick={() => { setStatus('idle'); setMessage(null); }}
+          >
+            Go back
+          </button>
+        </p>
       </div>
     );
   }
 
-  return (
-    <div>
-      {/* Mode toggle */}
-      <div className="toolbar" style={{ marginBottom: '1.5rem' }}>
-        <button
-          type="button"
-          className={mode === 'password' ? 'action' : 'action action--ghost'}
-          onClick={() => { setMode('password'); setMessage(null); setStatus('idle'); }}
-        >
-          Password
-        </button>
-        <button
-          type="button"
-          className={mode === 'link' ? 'action' : 'action action--ghost'}
-          onClick={() => { setMode('link'); setMessage(null); setStatus('idle'); }}
-        >
-          Email link
-        </button>
-      </div>
+  /* ----------------------------------------------------------------- sign in */
 
-      {mode === 'password' ? (
-        <form onSubmit={signInWithPassword}>
+  if (mode === 'signin') {
+    return (
+      <div>
+        <form onSubmit={signIn}>
           <label className="field">
             <span className="field__label">Email</span>
             <input
@@ -117,7 +117,7 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
               required
               autoComplete="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
             />
           </label>
@@ -128,40 +128,92 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
               required
               autoComplete="current-password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
             />
           </label>
-          <button type="submit" className="action" disabled={status === 'sending'}>
-            {status === 'sending' ? 'Signing in...' : 'Sign in'}
+          <button type="submit" className="action" disabled={status === 'busy'}>
+            {status === 'busy' ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-      ) : (
-        <form onSubmit={sendLink}>
-          <label className="field">
-            <span className="field__label">Email</span>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-            />
-          </label>
-          <button type="submit" className="action" disabled={status === 'sending'}>
-            {status === 'sending' ? 'Sending...' : 'Email me a link'}
-          </button>
-        </form>
-      )}
 
-      <div className="toolbar" style={{ marginTop: '1.5rem' }}>
-        <button type="button" className="action action--ghost" onClick={google}>
-          Continue with Google
-        </button>
+        {message ? <div className="notice" style={{ marginTop: '1rem' }}>{message}</div> : null}
+
+        <p style={{ marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--ink-soft)' }}>
+          No account?{' '}
+          <button
+            type="button"
+            className="action--quiet"
+            style={{ fontSize: 'inherit', display: 'inline', padding: 0 }}
+            onClick={() => { setMode('signup'); setMessage(null); }}
+          >
+            Create one
+          </button>
+        </p>
       </div>
+    );
+  }
 
-      {message ? <div className="notice">{message}</div> : null}
+  /* --------------------------------------------------------------- sign up */
+
+  return (
+    <div>
+      <form onSubmit={createAccount}>
+        <label className="field">
+          <span className="field__label">Email</span>
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+        </label>
+        <label className="field">
+          <span className="field__label">Password</span>
+          <input
+            type="password"
+            required
+            minLength={6}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 6 characters"
+          />
+        </label>
+        <label className="field">
+          <span className="field__label">Leaderboard name</span>
+          <input
+            type="text"
+            maxLength={20}
+            autoComplete="username"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="LexiconKing"
+          />
+          <span className="label" style={{ display: 'block', marginTop: '0.3rem' }}>
+            This is what other players see. You can change it later.
+          </span>
+        </label>
+        <button type="submit" className="action" disabled={status === 'busy'}>
+          {status === 'busy' ? 'Creating account...' : 'Create account'}
+        </button>
+      </form>
+
+      {message ? <div className="notice" style={{ marginTop: '1rem' }}>{message}</div> : null}
+
+      <p style={{ marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--ink-soft)' }}>
+        Already have an account?{' '}
+        <button
+          type="button"
+          className="action--quiet"
+          style={{ fontSize: 'inherit', display: 'inline', padding: 0 }}
+          onClick={() => { setMode('signin'); setMessage(null); }}
+        >
+          Sign in
+        </button>
+      </p>
     </div>
   );
 }

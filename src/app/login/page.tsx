@@ -28,19 +28,13 @@ export default async function LoginPage({
       </div>
 
       <h1 className="lede" style={{ fontSize: 'clamp(1.8rem, 6vw, 2.4rem)' }}>
-        {claim ? 'Pick a name. Get on the leaderboard.' : `Sign in to ${BRAND.name}.`}
+        {claim ? 'Save your score.' : `Sign in to ${BRAND.name}.`}
       </h1>
       <p className="standfirst">
         {claim
-          ? "Create a free account and you'll choose your leaderboard display name. Your score, streak and history are saved to your account."
-          : 'Accounts let you appear on the leaderboard with a name you choose, track your streak and personal records, and carry your history across devices. You never need one to play.'}
+          ? 'Create a free account to save your score to the leaderboard, build a streak and track your history across devices.'
+          : 'Sign in or create a free account. Accounts let you appear on the leaderboard, track your streak and carry your history across devices.'}
       </p>
-
-      {claim ? (
-        <div className="notice notice--quiet" style={{ marginTop: '1.5rem' }}>
-          After signing in you will pick your leaderboard name on the next screen.
-        </div>
-      ) : null}
 
       {isSupabaseConfigured() ? (
         <div style={{ marginTop: '2rem' }}>
