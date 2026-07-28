@@ -119,12 +119,24 @@ export function GameClient({
       setAttempt(payload.attempt);
       setRoundIndex(payload.attempt.answeredRoundIds.length);
       setSelected(null);
+      setResult(null);
       setPhase('playing');
     } catch {
       setError('Network problem. Check your connection and try again.');
       setPhase('idle');
     }
   }, [game?.gameId]);
+
+  /* --------------------------------------------------------- play again (for fun) */
+  const playAgain = useCallback(() => {
+    setResult(null);
+    setAttempt(null);
+    setRoundIndex(0);
+    setSelected(null);
+    setError(null);
+    answersRef.current = [];
+    void start();
+  }, [start]);
 
   /* --------------------------------------------------------------- complete */
   const submitCompletion = useCallback(
@@ -255,6 +267,7 @@ export function GameClient({
         animate
         showSignupCta={showSignupCta}
         sharingEnabled={sharingEnabled}
+        onPlayAgain={playAgain}
       />
     );
   }
@@ -262,7 +275,7 @@ export function GameClient({
   if (phase === 'submitting') {
     return (
       <section style={{ padding: '4rem 0' }}>
-        <p className="loader">Marking your paper…</p>
+        <p className="loader">Marking your paper...</p>
         {error ? <div className="notice">{error}</div> : null}
       </section>
     );
@@ -271,6 +284,12 @@ export function GameClient({
   if (phase === 'playing' && attempt && currentRound) {
     return (
       <section>
+        {!attempt.isRanked ? (
+          <div className="notice notice--quiet" style={{ marginBottom: '0.5rem' }}>
+            Practice run - this will not be ranked or added to the leaderboard.
+          </div>
+        ) : null}
+
         <div className="game-head">
           <span className="game-head__id">{gameLabel(attempt.game.gameNumber)}</span>
           <div className="game-head__meta">
@@ -304,8 +323,12 @@ export function GameClient({
             clip: 'rect(0 0 0 0)',
           }}
         >
-          Round {currentRound.roundNumber} of {attempt.rounds.length}. Choose the invented word.
+          Round {currentRound.roundNumber} of {attempt.rounds.length}. Choose the fake word.
         </h1>
+
+        <p className="label label--signal" style={{ marginTop: '1.4rem', marginBottom: '0.4rem' }}>
+          Choose the fake word
+        </p>
 
         <ul className="options">
           {currentRound.options.map((option, index) => (
@@ -331,11 +354,8 @@ export function GameClient({
         </ul>
 
         <p className="keyhint">
-          One choice per round · keys 1–5 · no feedback until round {attempt.rounds.length}
+          One choice per round · keys 1-5 · no feedback until round {attempt.rounds.length}
         </p>
-        {!attempt.isRanked ? (
-          <p className="label label--signal">Practice run — this will not be ranked.</p>
-        ) : null}
         {error ? <div className="notice">{error}</div> : null}
       </section>
     );
@@ -350,10 +370,10 @@ export function GameClient({
       </div>
 
       <h1 className="lede">
-        One of these words <em>isn’t real</em>.
+        One of these words <em>isn't real</em>.
       </h1>
       <p className="standfirst">
-        Ten rounds. Five words each. Choose the invented one. You get a single choice per round and
+        Ten rounds. Five words each. Choose the fake word. You get a single choice per round and
         you will not find out how you did until the tenth.
       </p>
 
@@ -366,7 +386,7 @@ export function GameClient({
           onClick={start}
           disabled={phase === 'starting' || !game}
         >
-          {phase === 'starting' ? 'Starting…' : 'Start today’s game'}
+          {phase === 'starting' ? 'Starting...' : 'Start today\'s game'}
         </button>
         <Link className="action--quiet" href="/how-to-play">
           How to play
@@ -374,7 +394,7 @@ export function GameClient({
       </div>
 
       <p className="label" style={{ marginTop: '1.5rem' }}>
-        The clock starts when you press start — not when the page loads.
+        The clock starts when you press start.
       </p>
     </section>
   );

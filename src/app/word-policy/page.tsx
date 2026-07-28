@@ -22,7 +22,7 @@ export default function WordPolicyPage() {
       <p>
         {BRAND.name} runs on a curated modern-English lexicon that we maintain ourselves. Being
         recorded somewhere in the history of English is not sufficient. A word earns its place if an
-        educated English speaker could reasonably encounter it — even if they personally do not know
+        educated English speaker could reasonably encounter it - even if they personally do not know
         it.
       </p>
 
@@ -63,22 +63,23 @@ export default function WordPolicyPage() {
       <h2>Fairness</h2>
       <p>
         Rounds are built so that roughly three of the five words are reasonable anchors for a strong
-        vocabulary player, one is a legitimate word chosen because it looks invented, and one is the
-        fabrication. Five obscure words is a failure state, not a difficulty setting.
+        vocabulary player, one is a legitimate word chosen because it looks like the fake, and one is
+        the fabrication. Five obscure words is a failure state, not a difficulty setting.
       </p>
 
       <h2>Disputes</h2>
       <p>
-        If you believe a word was wrong — a fake that is real, a real word that should not qualify, or
-        a definition that misleads — tell us. Include the game number and the round. Reports go to{' '}
+        If you believe a word was wrong - a fake that is real, a real word that should not qualify, or
+        a definition that misleads - tell us. Include the game number and the round. Reports go to{' '}
         <a href={`mailto:words@${BRAND.domain}`}>words@{BRAND.domain}</a> and are reviewed
         editorially. Corrections are made to the lexicon so the same dispute cannot recur.
       </p>
 
       <h2>Not machine-generated at play time</h2>
       <p>
-        Games are written, validated and reviewed before publication. Nothing you play was invented
-        by a language model at the moment you pressed start.
+        Games are written, validated and reviewed before publication. Nothing you play was generated
+        by a language model at the moment you pressed start. The fake words are hand-crafted, not
+        AI-generated.
       </p>
 
       <div className="toolbar" style={{ marginTop: '2rem' }}>

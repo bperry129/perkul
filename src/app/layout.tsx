@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: `%s · ${BRAND.name}`,
   },
   description:
-    'A daily vocabulary game. Five words, one is invented. Ten rounds. Accuracy wins, speed breaks ties.',
+    'A daily vocabulary game. Five words, one is fake. Ten rounds. Most right, fastest, wins.',
   applicationName: BRAND.name,
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   openGraph: {

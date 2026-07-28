@@ -177,11 +177,11 @@ function ShareBlock({ result }: { result: AttemptResult }) {
   return (
     <div className="share">
       <button type="button" className="action action--ghost" onClick={share}>
-        {state === 'copied' ? 'Copied' : 'Copy result'}
+        {state === 'copied' ? 'Copied' : 'Share result'}
       </button>
       <div className="share__preview">{result.shareText}</div>
       {state === 'failed' ? (
-        <p className="label">Copying is blocked in this browser — select the text above.</p>
+        <p className="label">Copying is blocked in this browser - select the text above.</p>
       ) : null}
     </div>
   );
@@ -199,7 +199,7 @@ function Standing({ result }: { result: AttemptResult }) {
         <span className="standing__value">
           #{c.rank} of {c.total}
         </span>
-        <span className="standing__note">Today’s players</span>
+        <span className="standing__note">Today's players</span>
         {c.beatPercent != null ? (
           <span className="standing__note">You beat {c.beatPercent}% of them</span>
         ) : null}
@@ -215,7 +215,6 @@ function Standing({ result }: { result: AttemptResult }) {
       <span className="standing__note">
         Benchmark field{c.topPercent != null ? ` · top ${c.topPercent}%` : ''}
       </span>
-      <span className="standing__note">Not real players</span>
     </div>
   );
 }
@@ -227,11 +226,13 @@ export function ResultsView({
   animate = false,
   showSignupCta = true,
   sharingEnabled = true,
+  onPlayAgain,
 }: {
   result: AttemptResult;
   animate?: boolean;
   showSignupCta?: boolean;
   sharingEnabled?: boolean;
+  onPlayAgain?: () => void;
 }) {
   const missedRounds = result.rounds.filter((r) => !r.isCorrect).map((r) => r.roundNumber);
   const records = result.records;
@@ -240,7 +241,7 @@ export function ResultsView({
     <section>
       <div className="dateline">
         <span>{gameLabel(result.game.gameNumber)}</span>
-        <span>{result.isRanked ? 'Ranked attempt' : 'Practice — unranked'}</span>
+        <span>{result.isRanked ? 'Ranked attempt' : 'Practice - unranked'}</span>
       </div>
 
       <Reveal marks={result.marks} animate={animate} />
@@ -252,7 +253,7 @@ export function ResultsView({
           </div>
           <div className="score__time">{formatSeconds(result.elapsedMs)} SECONDS</div>
         </div>
-        {result.grade ? <div className="score__grade">{result.grade}</div> : null}
+        {result.grade ? <div className="score__grade">Grade {result.grade}</div> : null}
       </div>
 
       <p className="label">
@@ -287,16 +288,29 @@ export function ResultsView({
 
       {sharingEnabled ? <ShareBlock result={result} /> : null}
 
+      {/* Play again for fun */}
+      {onPlayAgain ? (
+        <div style={{ marginTop: '1.5rem' }}>
+          <button type="button" className="action action--ghost" onClick={onPlayAgain}>
+            Play again for fun
+          </button>
+          <p className="label" style={{ marginTop: '0.6rem' }}>
+            Practice only - will not affect your score, rank or streak.
+          </p>
+        </div>
+      ) : null}
+
+      {/* Sign up CTA */}
       {!result.isAuthenticated && showSignupCta ? (
         <div className="cta">
-          <h2 className="cta__title">Keep this one.</h2>
+          <h2 className="cta__title">Get on the leaderboard.</h2>
           <p style={{ color: 'var(--ink-soft)' }}>
-            Save your {result.correctCount}/{result.roundsTotal} in{' '}
-            {formatSeconds(result.elapsedMs)}s, build a streak and compare your history across
-            devices.
+            Create a free account, pick your leaderboard name, and your{' '}
+            {result.correctCount}/{result.roundsTotal} in {formatSeconds(result.elapsedMs)}s is
+            saved - plus your streak and history across devices.
           </p>
           <Link className="action" href="/login?claim=1">
-            Save my score
+            Choose my name and save my score
           </Link>
         </div>
       ) : null}
@@ -305,7 +319,7 @@ export function ResultsView({
         <h2 className="admin-title" style={{ fontSize: '1.4rem', margin: '2.5rem 0 0.5rem' }}>
           What fooled you
         </h2>
-        <p className="label">Every round, the fake, and the trap that was set for you.</p>
+        <p className="label">Every round, the fake word, and the trap that was set for you.</p>
         {result.rounds.map((round) => (
           <RoundEntry key={round.roundId} round={round} />
         ))}
@@ -313,7 +327,7 @@ export function ResultsView({
 
       <div className="toolbar" style={{ marginTop: '2rem' }}>
         <Link className="action action--ghost" href="/leaderboard">
-          Today’s leaderboard
+          Today's leaderboard
         </Link>
         <Link className="action--quiet" href="/how-to-play">
           What counts as a word in {BRAND.name}?

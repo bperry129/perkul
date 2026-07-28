@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { GameClient } from '@/components/GameClient';
-import { ResultsView } from '@/components/ResultsView';
 import { Countdown } from '@/components/Countdown';
 import { BRAND, gameLabel } from '@/lib/brand';
 import { isSupabaseConfigured } from '@/lib/supabase/admin';
@@ -20,6 +19,9 @@ export const dynamic = 'force-dynamic';
 /**
  * The homepage IS today's game. No marketing gate, no account wall: a first
  * time visitor understands the premise and can press start immediately.
+ *
+ * Completed games render through GameClient (not a static ResultsView) so the
+ * "Play again for fun" button works client-side without a page reload.
  */
 export default async function HomePage() {
   if (!isSupabaseConfigured()) {
@@ -73,7 +75,7 @@ export default async function HomePage() {
         </div>
         <h1 className="lede">No puzzle today.</h1>
         <p className="standfirst">
-          Today’s game has not been published. This is on us, not you — try again shortly, or read
+          Today's game has not been published. This is on us, not you - try again shortly, or read
           the word policy while you wait.
         </p>
         <div className="toolbar">
@@ -97,7 +99,8 @@ export default async function HomePage() {
 
   const existing = await findAttemptForIdentity(game.id, identity);
 
-  // Already finished today: land on the result, not a dead START button.
+  // Already finished today: pass the result into GameClient so the "Play again
+  // for fun" button works without a full page reload.
   if (existing && existing.completion_status === 'completed') {
     const result = await buildAttemptResult(existing.id, identity);
     if (result) {
@@ -110,8 +113,10 @@ export default async function HomePage() {
       });
       return (
         <div className="shell shell--narrow">
-          <ResultsView
-            result={result}
+          <GameClient
+            game={summary}
+            initialAttempt={null}
+            initialResult={result}
             showSignupCta={signupCta}
             sharingEnabled={sharingEnabled}
           />
