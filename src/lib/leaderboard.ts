@@ -15,27 +15,43 @@ export type LeaderboardPage = {
   includesSimulated: boolean;
 };
 
-function mapRow(row: Record<string, unknown>): LeaderboardRow {
+type ProfileRow = { display_name: string | null; is_registered: boolean };
+
+type AttemptRowRaw = {
+  id: string;
+  correct_count: number | null;
+  elapsed_ms: number | null;
+  score: number | null;
+  is_simulated: boolean;
+  display_name_override: string | null;
+  user_id: string | null;
+  profiles: ProfileRow | ProfileRow[] | null;
+};
+
+function mapRaw(row: AttemptRowRaw, rank: number): LeaderboardRow {
   const correctCount = Number(row.correct_count ?? 0);
   const elapsedMs = Number(row.elapsed_ms ?? 0);
+  const profile = (Array.isArray(row.profiles) ? row.profiles[0] : row.profiles) as ProfileRow | null;
   return {
-    rank: Number(row.rank),
-    attemptId: row.attempt_id as string,
-    displayName: (row.display_name as string) ?? 'Guest',
+    rank,
+    attemptId: row.id,
+    displayName: row.display_name_override ?? profile?.display_name ?? 'Guest',
     correctCount,
     elapsedMs,
-    // The DB has a generated `score` column; recompute as a fallback so an
-    // un-migrated database still renders instead of showing zeroes.
     score: row.score != null ? Number(row.score) : perkulScore(correctCount, elapsedMs),
-    isRegistered: Boolean(row.is_registered),
+    isRegistered: Boolean(profile?.is_registered),
     isSimulated: Boolean(row.is_simulated),
   };
 }
 
+const ATTEMPT_SELECT =
+  'id, correct_count, elapsed_ms, score, is_simulated, display_name_override, user_id, ' +
+  'profiles!user_id(display_name, is_registered)';
+
 /**
- * Ranking is computed in Postgres (Perkul score DESC, then time ASC) and
- * paginated there too — the browser never receives thousands of rows. The SQL
- * ordering must agree with compareRanked() in ./scoring.
+ * Ranking is computed via direct table queries (not an RPC) so that pagination
+ * works reliably across both real and simulated entries. The ordering matches
+ * compareRanked() in ./scoring: score DESC, elapsed_ms ASC.
  */
 export async function getLeaderboardPage(options: {
   gameId: string;
@@ -45,27 +61,41 @@ export async function getLeaderboardPage(options: {
 }): Promise<LeaderboardPage> {
   const page = Math.max(1, options.page ?? 1);
   const pageSize = Math.min(100, Math.max(5, options.pageSize ?? 25));
+  const offset = (page - 1) * pageSize;
   const includeSimulated = await flagEnabled('simulated_data');
   const db = serviceClient();
 
-  const { data } = await db.rpc('leaderboard_page', {
-    p_game_id: options.gameId,
-    p_limit: pageSize,
-    p_offset: (page - 1) * pageSize,
-    p_include_simulated: includeSimulated,
-  });
+  // ------------------------------------------------------------------ total
+  let countQ = db
+    .from('attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('game_id', options.gameId)
+    .eq('is_ranked', true)
+    .eq('completion_status', 'completed')
+    .eq('integrity_status', 'valid');
+  if (!includeSimulated) countQ = countQ.eq('is_simulated', false);
+  const { count: rawCount } = await countQ;
+  const total = Number(rawCount ?? 0);
 
-  const rows = ((data ?? []) as Array<Record<string, unknown>>).map(mapRow);
+  // ------------------------------------------------------------------- rows
+  let rowsQ = db
+    .from('attempts')
+    .select(ATTEMPT_SELECT)
+    .eq('game_id', options.gameId)
+    .eq('is_ranked', true)
+    .eq('completion_status', 'completed')
+    .eq('integrity_status', 'valid');
+  if (!includeSimulated) rowsQ = rowsQ.eq('is_simulated', false);
+  const { data: pageData } = await rowsQ
+    .order('score', { ascending: false, nullsFirst: false })
+    .order('elapsed_ms', { ascending: true })
+    .range(offset, offset + pageSize - 1);
 
-  const { data: statsData } = await db.rpc('daily_stats', {
-    p_game_id: options.gameId,
-    p_include_simulated: includeSimulated,
-  });
-  const stats = (Array.isArray(statsData) ? statsData[0] : statsData) as
-    | { completions: number }
-    | undefined;
-  const total = Number(stats?.completions ?? rows.length);
+  const rows: LeaderboardRow[] = ((pageData ?? []) as unknown as AttemptRowRaw[]).map((row, i) =>
+    mapRaw(row, offset + i + 1),
+  );
 
+  // --------------------------------------------------------- find "you"
   let you: LeaderboardRow | null = null;
   let neighbours: LeaderboardRow[] = [];
 
@@ -75,25 +105,55 @@ export async function getLeaderboardPage(options: {
       you = { ...inPage, isYou: true };
       rows[rows.indexOf(inPage)] = you;
     } else {
-      const { data: rankData } = await db.rpc('attempt_rank', {
-        p_attempt_id: options.myAttemptId,
-        p_include_simulated: includeSimulated,
-      });
-      const rankRow = (Array.isArray(rankData) ? rankData[0] : rankData) as
-        | { rank: number; total: number }
-        | undefined;
-      const myRank = Number(rankRow?.rank ?? 0);
-      if (myRank > 0) {
-        const offset = Math.max(0, myRank - 2);
-        const { data: around } = await db.rpc('leaderboard_page', {
-          p_game_id: options.gameId,
-          p_limit: 3,
-          p_offset: offset,
-          p_include_simulated: includeSimulated,
-        });
-        neighbours = ((around ?? []) as Array<Record<string, unknown>>).map((row) => {
-          const mapped = mapRow(row);
-          if (mapped.attemptId === options.myAttemptId) {
+      // User not in the visible page → compute their rank and load neighbours.
+      const { data: myData } = await db
+        .from('attempts')
+        .select('id, correct_count, elapsed_ms, score')
+        .eq('id', options.myAttemptId)
+        .maybeSingle();
+
+      if (myData) {
+        const myScore =
+          (myData as Record<string, unknown>).score != null
+            ? Number((myData as Record<string, unknown>).score)
+            : perkulScore(
+                Number((myData as Record<string, unknown>).correct_count ?? 0),
+                Number((myData as Record<string, unknown>).elapsed_ms ?? 0),
+              );
+        const myElapsed = Number((myData as Record<string, unknown>).elapsed_ms ?? 0);
+
+        // Count how many entries rank strictly above this attempt.
+        let betterQ = db
+          .from('attempts')
+          .select('id', { count: 'exact', head: true })
+          .eq('game_id', options.gameId)
+          .eq('is_ranked', true)
+          .eq('completion_status', 'completed')
+          .eq('integrity_status', 'valid');
+        if (!includeSimulated) betterQ = betterQ.eq('is_simulated', false);
+        const { count: betterCount } = await betterQ.or(
+          `score.gt.${myScore},and(score.eq.${myScore},elapsed_ms.lt.${myElapsed})`,
+        );
+        const myRank = Number(betterCount ?? 0) + 1;
+
+        // Load the 3 rows bracketing the user's position.
+        const nearOffset = Math.max(0, myRank - 2);
+        let nearQ = db
+          .from('attempts')
+          .select(ATTEMPT_SELECT)
+          .eq('game_id', options.gameId)
+          .eq('is_ranked', true)
+          .eq('completion_status', 'completed')
+          .eq('integrity_status', 'valid');
+        if (!includeSimulated) nearQ = nearQ.eq('is_simulated', false);
+        const { data: nearData } = await nearQ
+          .order('score', { ascending: false, nullsFirst: false })
+          .order('elapsed_ms', { ascending: true })
+          .range(nearOffset, nearOffset + 2);
+
+        neighbours = ((nearData ?? []) as unknown as AttemptRowRaw[]).map((row, i) => {
+          const mapped = mapRaw(row, nearOffset + i + 1);
+          if (row.id === options.myAttemptId) {
             you = { ...mapped, isYou: true };
             return you;
           }
