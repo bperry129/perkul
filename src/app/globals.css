@@ -308,6 +308,31 @@ hr {
 .progress-rules span[data-done='true'] { background: var(--ink); }
 .progress-rules span[data-current='true'] { background: var(--signal); }
 
+/* prominent round instruction above the options */
+
+.game-prompt {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.1rem 0 0;
+  padding: 0.75rem 0.85rem;
+  background: var(--panel);
+  color: var(--accent);
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  font-style: italic;
+}
+
+.game-prompt::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
 /* the five words: the star of the page */
 
 .options {

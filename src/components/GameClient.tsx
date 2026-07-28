@@ -326,9 +326,9 @@ export function GameClient({
           Round {currentRound.roundNumber} of {attempt.rounds.length}. Choose the fake word.
         </h1>
 
-        <p className="label label--signal" style={{ marginTop: '1.4rem', marginBottom: '0.4rem' }}>
+        <div className="game-prompt">
           Choose the fake word
-        </p>
+        </div>
 
         <ul className="options">
           {currentRound.options.map((option, index) => (
