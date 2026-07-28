@@ -1,0 +1,282 @@
+# Perkul
+
+**Five words. One is fake.**
+
+Perkul is a daily timed vocabulary game. Ten rounds, five words per round, exactly one
+fabricated word in each. You get one choice per round, no feedback until the end.
+Accuracy wins; speed only breaks ties.
+
+- First game: **July 28, 2026** = Perkul **#001**
+- Seeded content bank: **20 games / 200 rounds / 1,000 options** (2026-07-28 → 2026-08-16)
+- Daily rollover: midnight **America/New_York** (EDT/EST handled automatically, no cron required)
+
+The brand name lives in one place (`src/lib/brand.ts`, overridable with
+`NEXT_PUBLIC_BRAND_NAME`). Renaming the product is a one-line change.
+
+---
+
+## 1. Stack
+
+| Concern | Choice |
+| --- | --- |
+| App | Next.js 14 (App Router, React Server Components) |
+| Language | TypeScript (strict) |
+| Database | Supabase Postgres + RLS |
+| Auth | Supabase Auth (email magic link + Google; Apple ready) |
+| Validation | Zod |
+| Tests | Vitest |
+| Deploy | Vercel |
+
+No UI framework, no animation library, no icon packs, no client-side dictionary calls.
+Gameplay ships as one small client component; everything else is server rendered.
+
+---
+
+## 2. Local setup
+
+```bash
+cd perkul
+npm install
+cp .env.example .env.local   # then fill in your Supabase values
+```
+
+### 2.1 Create the database
+
+Either paste the migration into the Supabase SQL editor, or use the CLI:
+
+```bash
+# Option A — Supabase CLI (recommended)
+supabase link --project-ref <your-project-ref>
+supabase db push
+
+# Option B — manual
+# Open supabase/migrations/20260701000000_init.sql and run it in the SQL editor.
+```
+
+The migration creates every table, index, RLS policy, and the security-definer
+functions used for leaderboards and aggregate statistics. It also seeds the
+feature flags, app settings, and the 6,000-run benchmark version.
+
+### 2.2 Seed the content bank
+
+```bash
+npm run seed          # upserts lexicon + 20 daily games, published
+npm run seed -- --reset   # deletes seeded games first, then re-imports
+npm run seed -- --draft   # import as needs_review instead of published
+```
+
+The seeder:
+
+1. builds `lexicon_entries` from the authored content (800+ accepted words),
+2. inserts games, rounds and options,
+3. runs the full content validator and **refuses to publish anything with errors**.
+
+Validate content without touching the database:
+
+```bash
+npm run content:check
+```
+
+### 2.3 Run it
+
+```bash
+npm run dev     # http://localhost:3000
+npm test        # 82 tests
+npm run typecheck
+npm run build
+```
+
+### 2.4 Create an admin
+
+Sign in once through `/login` so the user exists, then:
+
+```bash
+npm run admin:create -- you@example.com
+```
+
+Or set `ADMIN_EMAILS=you@example.com` in `.env.local` before `npm run seed`.
+Admin authorization is enforced server-side in `src/app/admin/layout.tsx` and in every
+admin server action — hiding the nav is never the security boundary.
+
+---
+
+## 3. How the day works
+
+`America/New_York` is the only calendar that matters.
+
+```
+current NY date  ->  games.active_date  ->  today's published game
+```
+
+No scheduled job is needed to flip games; the active game is a date lookup
+(`src/lib/games.ts`). DST is handled by resolving the true UTC instant of NY
+midnight (`src/lib/time.ts`), which is also what the countdown and streak logic use.
+
+A game must be `published` **and** dated today to be live. Past games are kept
+forever and can never receive a new ranked attempt.
+
+---
+
+## 4. Answer security
+
+This is the part that must not leak.
+
+1. `round_options.is_real`, `rounds.fake_option_id`, `intended_decoy_option_id`,
+   rationales and definitions live in tables with **no RLS policy for `anon` or
+   `authenticated`** — a normal Supabase client gets zero rows, not filtered rows.
+2. The browser only ever receives `{ optionId, word, position }` per round during play
+   (`src/lib/public-payload.ts` strips everything else).
+3. Correctness is computed on the server at completion time. The results API is the
+   first moment answer data crosses the wire, and only for a completed attempt.
+4. Option order is shuffled deterministically **per attempt** and stored, so
+   "today's round 7 answer is #3" is meaningless.
+5. No fake word appears in page titles, metadata, share text, or public JSON.
+
+`tests/gameplay.test.ts` asserts the payload shape has no answer keys.
+
+---
+
+## 5. Attempt lifecycle
+
+```
+START pressed
+  -> POST /api/attempt/start
+     creates attempt, records SERVER started_at, stores shuffled order
+each selection
+  -> POST /api/attempt/answer     (no correctness returned, ever)
+tenth selection
+  -> POST /api/attempt/complete   (idempotent)
+     server completed_at -> authoritative elapsed_ms -> correct_count -> results
+```
+
+- Refresh mid-game restores the attempt from the server start timestamp; the timer
+  does not reset.
+- Completion is idempotent: a retried submit returns the original result and cannot
+  rewrite answers.
+- Integrity states: `valid`, `suspicious`, `unranked`, `admin_review`. Suspicious
+  attempts are flagged, never deleted, and stay out of public ranking.
+- One ranked attempt per user (or anonymous session) per game, enforced by partial
+  unique indexes — not by localStorage.
+
+Guests play the full game. Signing up afterward claims the anonymous attempt through
+a server-side cookie match (`/api/attempt/claim`), not a browser-supplied attempt ID.
+
+---
+
+## 6. Ranking
+
+Sorting is always:
+
+1. `correct_count DESC`
+2. `elapsed_ms ASC`
+3. `completed_at ASC`
+
+A 10/10 in 6 hours beats a 9/10 in 9 seconds. This is asserted in
+`tests/scoring.test.ts` and enforced by the SQL leaderboard function.
+
+Grades (`A+` … `F`) are cosmetic, accuracy-dominant, and configurable in
+Admin → Settings. They never affect ordering.
+
+---
+
+## 7. Comparisons: real vs benchmark
+
+Admin → Comparisons controls the mode:
+
+| Mode | Behaviour |
+| --- | --- |
+| `off` | personal results only |
+| `real` | real ranked completions, but only past `minimum_real_sample_size` (default 100) |
+| `benchmark` | deterministic 6,000-run synthetic field, always labelled |
+
+Below the threshold the product either hides the module or shows
+"Estimated top 11% — based on our 6,000-run benchmark field". It never says
+"you beat 75% of players" when four people have played. Benchmark ranks are analytic
+and seeded, so the same result never drifts between refreshes.
+
+---
+
+## 8. Admin
+
+`/admin` — Dashboard · Game Bank · Create/Import · Lexicon · Players · Attempts ·
+Analytics · Comparisons · Feature Flags · Settings.
+
+**Runway.** The dashboard shows days of content remaining and warns loudly under 7 days.
+
+**Content pipeline.**
+
+1. Admin → Game Bank → *Generate Next Bank Prompt*. Pick the number of days; the next
+   unused date and game number are computed automatically. The prompt embeds the rules,
+   the difficulty curve, the accepted-word policy, every historical fake word, recently
+   used real words and decoys, and the exact JSON schema.
+2. Copy it, run it through an AI, get JSON back.
+3. Admin → *Import Generated Bank*. The import preview reports games, rounds, options,
+   new words, validation errors, warnings and historical duplicates before anything is
+   written. Imports always land as `needs_review` — never auto-published.
+4. Review each round against the quality checklist, fix in the editor, mark Ready,
+   then Publish.
+
+**Validator** (`src/lib/validation.ts`) blocks: wrong round/option counts, more or fewer
+than one fake, a fake that exists in the accepted lexicon, a reused fake, missing
+definitions or rationales, a decoy that isn't real, duplicate words inside a game, and
+too many visual-pattern rounds. Soft warnings cover reuse cooldowns (fakes never,
+decoys 180 days, real words 60–90 days) and anchor-count quality.
+
+**QA data.** Admin → Attempts generates 100 / 1,000 / 6,000 simulated attempts, all
+`is_simulated = true`, excluded from public UI and round statistics, and deletable in
+one click.
+
+---
+
+## 9. Project layout
+
+```
+supabase/migrations/     schema, indexes, RLS, leaderboard + stats functions
+src/lib/                 brand, time, games, attempts, scoring, benchmark,
+                         comparison, validation, import-schema, prompt, flags
+src/lib/public-payload   the only thing the browser is allowed to see
+src/content/             the authored 20-day bank + dev fixture (TOVEN/BRUME)
+src/app/                 public pages, /admin, /api route handlers
+src/components/          GameClient, ResultsView, Countdown, forms
+scripts/                 seed, make-admin, validate-content
+tests/                   time, scoring, gameplay, content
+```
+
+---
+
+## 10. Tests
+
+```bash
+npm test
+```
+
+Covers NY date switching and DST boundaries, 10-round and one-fake enforcement,
+one-choice-per-round, accuracy calculation, leaderboard ordering (including
+10/10 > every 9/10), first-attempt-ranked and replay-unranked, expired games,
+anonymous claiming, answer data never reaching the client, feature flags, the
+comparison sample threshold, deterministic benchmark ranking, import validation,
+duplicate fake detection, and a full audit of the 200 seeded rounds.
+
+---
+
+## 11. Deploy
+
+1. Push to GitHub and import the repo in Vercel.
+2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL` (`https://perkul.com`).
+3. Run the migration and `npm run seed` against the production project.
+4. Supabase → Auth → URL Configuration: add `https://perkul.com/auth/callback`.
+5. Enable Google in Supabase → Auth → Providers.
+6. Promote your admin account, then confirm `/admin` loads and `/` shows game #001.
+
+`SUPABASE_SERVICE_ROLE_KEY` is server-only. It is never imported into a client
+component; `src/lib/supabase/admin.ts` throws if it is loaded in the browser.
+
+---
+
+## 12. Launch configuration
+
+Daily game ON · accounts optional · guest play ON · signup encouragement ON ·
+explanations and definitions ON · sharing ON · real leaderboard ON ·
+real population percentages OFF until 100 ranked completions · benchmark comparisons ON ·
+practice replay OFF · archive OFF. All of it is toggleable in Admin → Feature Flags.
