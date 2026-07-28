@@ -15,9 +15,10 @@ export type LeaderboardPage = {
   includesSimulated: boolean;
 };
 
-type ProfileRow = { display_name: string | null; is_registered: boolean };
+/** Columns to select from attempts — NO embedded join so the row shape is reliable */
+const ATTEMPT_SELECT = 'id, correct_count, elapsed_ms, score, is_simulated, display_name_override, user_id';
 
-type AttemptRowRaw = {
+type AttemptPageRow = {
   id: string;
   correct_count: number | null;
   elapsed_ms: number | null;
@@ -25,13 +26,30 @@ type AttemptRowRaw = {
   is_simulated: boolean;
   display_name_override: string | null;
   user_id: string | null;
-  profiles: ProfileRow | ProfileRow[] | null;
 };
 
-function mapRaw(row: AttemptRowRaw, rank: number): LeaderboardRow {
+type ProfileRecord = { user_id: string; display_name: string | null; is_registered: boolean };
+
+/** Batch-fetch display names by user_id so we avoid embedded-join issues */
+async function fetchProfiles(userIds: string[]): Promise<Map<string, ProfileRecord>> {
+  if (!userIds.length) return new Map();
+  const { data } = await serviceClient()
+    .from('profiles')
+    .select('user_id, display_name, is_registered')
+    .in('user_id', userIds);
+  const out = new Map<string, ProfileRecord>();
+  for (const row of (data ?? []) as ProfileRecord[]) out.set(row.user_id, row);
+  return out;
+}
+
+function mapAttempt(
+  row: AttemptPageRow,
+  rank: number,
+  profiles: Map<string, ProfileRecord>,
+): LeaderboardRow {
   const correctCount = Number(row.correct_count ?? 0);
   const elapsedMs = Number(row.elapsed_ms ?? 0);
-  const profile = (Array.isArray(row.profiles) ? row.profiles[0] : row.profiles) as ProfileRow | null;
+  const profile = row.user_id ? profiles.get(row.user_id) : null;
   return {
     rank,
     attemptId: row.id,
@@ -43,10 +61,6 @@ function mapRaw(row: AttemptRowRaw, rank: number): LeaderboardRow {
     isSimulated: Boolean(row.is_simulated),
   };
 }
-
-const ATTEMPT_SELECT =
-  'id, correct_count, elapsed_ms, score, is_simulated, display_name_override, user_id, ' +
-  'profiles!user_id(display_name, is_registered)';
 
 /**
  * Ranking is computed via direct table queries (not an RPC) so that pagination
@@ -91,8 +105,12 @@ export async function getLeaderboardPage(options: {
     .order('elapsed_ms', { ascending: true })
     .range(offset, offset + pageSize - 1);
 
-  const rows: LeaderboardRow[] = ((pageData ?? []) as unknown as AttemptRowRaw[]).map((row, i) =>
-    mapRaw(row, offset + i + 1),
+  const rawRows = (pageData ?? []) as unknown as AttemptPageRow[];
+  const pageUserIds = rawRows.map((r) => r.user_id).filter(Boolean) as string[];
+  const profiles = await fetchProfiles(pageUserIds);
+
+  const rows: LeaderboardRow[] = rawRows.map((row, i) =>
+    mapAttempt(row, offset + i + 1, profiles),
   );
 
   // --------------------------------------------------------- find "you"
@@ -108,19 +126,17 @@ export async function getLeaderboardPage(options: {
       // User not in the visible page → compute their rank and load neighbours.
       const { data: myData } = await db
         .from('attempts')
-        .select('id, correct_count, elapsed_ms, score')
+        .select(ATTEMPT_SELECT)
         .eq('id', options.myAttemptId)
         .maybeSingle();
 
       if (myData) {
+        const myRow = myData as unknown as AttemptPageRow;
         const myScore =
-          (myData as Record<string, unknown>).score != null
-            ? Number((myData as Record<string, unknown>).score)
-            : perkulScore(
-                Number((myData as Record<string, unknown>).correct_count ?? 0),
-                Number((myData as Record<string, unknown>).elapsed_ms ?? 0),
-              );
-        const myElapsed = Number((myData as Record<string, unknown>).elapsed_ms ?? 0);
+          myRow.score != null
+            ? Number(myRow.score)
+            : perkulScore(Number(myRow.correct_count ?? 0), Number(myRow.elapsed_ms ?? 0));
+        const myElapsed = Number(myRow.elapsed_ms ?? 0);
 
         // Count how many entries rank strictly above this attempt.
         let betterQ = db
@@ -151,8 +167,12 @@ export async function getLeaderboardPage(options: {
           .order('elapsed_ms', { ascending: true })
           .range(nearOffset, nearOffset + 2);
 
-        neighbours = ((nearData ?? []) as unknown as AttemptRowRaw[]).map((row, i) => {
-          const mapped = mapRaw(row, nearOffset + i + 1);
+        const nearRaws = (nearData ?? []) as unknown as AttemptPageRow[];
+        const nearUserIds = nearRaws.map((r) => r.user_id).filter(Boolean) as string[];
+        const nearProfiles = await fetchProfiles(nearUserIds);
+
+        neighbours = nearRaws.map((row, i) => {
+          const mapped = mapAttempt(row, nearOffset + i + 1, nearProfiles);
           if (row.id === options.myAttemptId) {
             you = { ...mapped, isYou: true };
             return you;
