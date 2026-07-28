@@ -35,11 +35,7 @@ function Row({ row }: { row: LeaderboardRow }) {
   );
 }
 
-export default async function LeaderboardPage({
-  searchParams,
-}: {
-  searchParams: { page?: string };
-}) {
+export default async function LeaderboardPage() {
   if (!isSupabaseConfigured()) {
     return (
       <div className="shell shell--narrow">
@@ -68,12 +64,11 @@ export default async function LeaderboardPage({
 
   const identity = await getIdentity();
   const mine = await findAttemptForIdentity(game.id, identity);
-  const page = Math.max(1, Number(searchParams.page ?? '1') || 1);
 
   const board = await getLeaderboardPage({
     gameId: game.id,
-    page,
-    pageSize: 25,
+    page: 1,
+    pageSize: 500,
     myAttemptId: mine?.completion_status === 'completed' ? mine.id : null,
   });
 
@@ -86,7 +81,6 @@ export default async function LeaderboardPage({
   });
 
   const showNeighbours = board.neighbours.length > 0;
-  const lastPage = Math.max(1, Math.ceil(board.total / board.pageSize));
 
   return (
     <div className="shell shell--narrow">
@@ -136,24 +130,6 @@ export default async function LeaderboardPage({
             ) : null}
           </tbody>
         </table>
-      ) : null}
-
-      {lastPage > 1 ? (
-        <div className="toolbar">
-          {page > 1 ? (
-            <Link className="action--quiet" href={`/leaderboard?page=${page - 1}`}>
-              ← Previous
-            </Link>
-          ) : null}
-          <span className="label">
-            Page {page} of {lastPage}
-          </span>
-          {page < lastPage ? (
-            <Link className="action--quiet" href={`/leaderboard?page=${page + 1}`}>
-              Next →
-            </Link>
-          ) : null}
-        </div>
       ) : null}
 
       <div className="toolbar" style={{ marginTop: '2rem' }}>
