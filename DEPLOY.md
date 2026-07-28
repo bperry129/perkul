@@ -119,3 +119,35 @@ key, then update it in Vercel and in your local `.env.local`. Cheap insurance.
 
 See `SETUP.md` for the local loop (`npm install`, `.env.local`, `npm run dev`,
 `npm run seed`, `npm test`).
+
+---
+
+## Git identity (Vercel will reject the deploy without it)
+
+Vercel matches a commit's **author email** to a Vercel account to decide who may
+trigger a build. A commit authored by an unrecognised address is refused with
+"...attempted to deploy a commit ... but they're not a member of the team", even
+though the push to GitHub succeeded. This happened once with a placeholder
+identity (`Temporary <temp@example.com>`) inherited from the machine's global git
+config.
+
+This repo therefore pins the identity locally:
+
+```bash
+git config --local user.name  "Brad Perry"
+git config --local user.email "bperry129@gmail.com"
+```
+
+Check before committing from a new machine or agent session:
+
+```bash
+git log --pretty="%h  %an  <%ae>  %s" -3
+```
+
+If a commit already went out with the wrong author, re-author it in place rather
+than layering a fix commit on top:
+
+```bash
+git commit --amend --reset-author --no-edit
+git push --force-with-lease origin main
+```
