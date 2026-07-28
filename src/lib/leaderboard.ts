@@ -57,7 +57,8 @@ export async function getLeaderboardPage(options: {
   myAttemptId?: string | null;
 }): Promise<LeaderboardPage> {
   const page = Math.max(1, options.page ?? 1);
-  const pageSize = Math.min(1000, Math.max(5, options.pageSize ?? 25));
+  // Allow up to 10,000 rows in a single call; callers choose a sensible page size.
+  const pageSize = Math.min(10_000, Math.max(5, options.pageSize ?? 25));
   const offset = (page - 1) * pageSize;
   const includeSimulated = await flagEnabled('simulated_data');
   const db = serviceClient();

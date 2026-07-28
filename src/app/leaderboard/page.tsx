@@ -15,8 +15,11 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Leaderboard',
-  description: 'Today’s standings. Most right, fastest, wins.',
+  description: "Today's standings. Most right, fastest, wins.",
 };
+
+// When the board is large we paginate at this size so the browser stays snappy.
+const PAGE_SIZE = 100;
 
 function Row({ row }: { row: LeaderboardRow }) {
   return (
@@ -35,7 +38,11 @@ function Row({ row }: { row: LeaderboardRow }) {
   );
 }
 
-export default async function LeaderboardPage() {
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
   if (!isSupabaseConfigured()) {
     return (
       <div className="shell shell--narrow">
@@ -56,7 +63,7 @@ export default async function LeaderboardPage() {
           {enabled ? 'There is no live game right now.' : 'The daily leaderboard is currently off.'}
         </p>
         <Link className="action action--ghost" href="/">
-          Back to today’s game
+          Back to today's game
         </Link>
       </div>
     );
@@ -65,10 +72,15 @@ export default async function LeaderboardPage() {
   const identity = await getIdentity();
   const mine = await findAttemptForIdentity(game.id, identity);
 
+  // If the total is small enough we load everything on one shot so there's no
+  // pagination at all. Once the player count grows beyond PAGE_SIZE we switch
+  // to proper pagination so the browser doesn't have to render thousands of rows.
+  const rawPage = Math.max(1, Number(searchParams.page ?? '1') || 1);
+
   const board = await getLeaderboardPage({
     gameId: game.id,
-    page: 1,
-    pageSize: 500,
+    page: rawPage,
+    pageSize: PAGE_SIZE,
     myAttemptId: mine?.completion_status === 'completed' ? mine.id : null,
   });
 
@@ -80,6 +92,7 @@ export default async function LeaderboardPage() {
     metadata: { gameNumber: game.game_number },
   });
 
+  const lastPage = Math.max(1, Math.ceil(board.total / PAGE_SIZE));
   const showNeighbours = board.neighbours.length > 0;
 
   return (
@@ -90,7 +103,7 @@ export default async function LeaderboardPage() {
       </div>
 
       <h1 className="lede" style={{ fontSize: 'clamp(1.7rem, 6vw, 2.4rem)' }}>
-        Today’s standings
+        Today's standings
       </h1>
       <p className="standfirst">
         {BRAND.rule} Every correct answer is worth 1,000 points and every second costs 8, so
@@ -130,6 +143,25 @@ export default async function LeaderboardPage() {
             ) : null}
           </tbody>
         </table>
+      ) : null}
+
+      {/* Pagination — only rendered when the board is large enough to need it */}
+      {lastPage > 1 ? (
+        <div className="toolbar" style={{ marginTop: '1.5rem' }}>
+          {rawPage > 1 ? (
+            <Link className="action--quiet" href={`/leaderboard?page=${rawPage - 1}`}>
+              ← Previous
+            </Link>
+          ) : null}
+          <span className="label">
+            Page {rawPage} of {lastPage}
+          </span>
+          {rawPage < lastPage ? (
+            <Link className="action--quiet" href={`/leaderboard?page=${rawPage + 1}`}>
+              Next →
+            </Link>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="toolbar" style={{ marginTop: '2rem' }}>
