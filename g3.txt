@@ -1,1 +1,0 @@
-rm 'git2.txt'
