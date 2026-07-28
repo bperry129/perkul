@@ -77,29 +77,17 @@ export async function getLeaderboardPage(options: {
   const total = Number(rawCount ?? 0);
 
   // ------------------------------------------------------------------- rows
-  // The leaderboard_page RPC is capped at 100 rows per call.
-  // Fetch in batches of 100 and concatenate until we have all pageSize rows.
-  const RPC_BATCH = 100;
-  let allRpcRows: RpcRow[] = [];
-  let batchOffset = offset;
-  let remaining = Math.min(pageSize, total);
+  // IMPORTANT: p_offset > 0 is broken in the leaderboard_page RPC when
+  // p_include_simulated = true. Always call with p_offset = 0 and request
+  // p_limit = total so every player is returned in one shot.
+  const { data: allData } = await db.rpc('leaderboard_page', {
+    p_game_id: options.gameId,
+    p_limit: total > 0 ? total : 10000,
+    p_offset: 0,
+    p_include_simulated: includeSimulated,
+  });
 
-  while (remaining > 0) {
-    const batchSize = Math.min(RPC_BATCH, remaining);
-    const { data: batchData } = await db.rpc('leaderboard_page', {
-      p_game_id: options.gameId,
-      p_limit: batchSize,
-      p_offset: batchOffset,
-      p_include_simulated: includeSimulated,
-    });
-    const batch = (batchData ?? []) as RpcRow[];
-    if (!batch.length) break; // RPC returned nothing — stop
-    allRpcRows = allRpcRows.concat(batch);
-    batchOffset += batch.length;
-    remaining -= batch.length;
-  }
-
-  const rows: LeaderboardRow[] = allRpcRows.map(mapRpcRow);
+  const rows: LeaderboardRow[] = ((allData ?? []) as RpcRow[]).map(mapRpcRow);
 
   // --------------------------------------------------------- find "you"
   let you: LeaderboardRow | null = null;
