@@ -36,7 +36,8 @@ export const FLAG_DEFAULTS: Record<FlagKey, boolean> = {
   sharing: true,
   daily_countdown: true,
   benchmark_population: true,
-  simulated_data: false,
+  // Default ON so leaderboard always shows the full player field from day one.
+  simulated_data: true,
 };
 
 /** Per-request memoized flag read. Flags are a handful of tiny rows. */
@@ -81,8 +82,11 @@ export async function setFlag(
   key: string,
   patch: { enabled?: boolean; configuration?: Record<string, unknown> },
 ): Promise<void> {
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (patch.enabled !== undefined) update.enabled = patch.enabled;
-  if (patch.configuration !== undefined) update.configuration = patch.configuration;
-  await serviceClient().from('feature_flags').update(update).eq('key', key);
+  const existing: Record<string, unknown> = { key, updated_at: new Date().toISOString() };
+  if (patch.enabled !== undefined) existing.enabled = patch.enabled;
+  if (patch.configuration !== undefined) existing.configuration = patch.configuration;
+  // Use upsert so the row is created on first toggle if it didn't exist yet.
+  await serviceClient()
+    .from('feature_flags')
+    .upsert(existing, { onConflict: 'key' });
 }
