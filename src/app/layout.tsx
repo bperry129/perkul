@@ -46,6 +46,7 @@ export const metadata: Metadata = {
     description: 'Five words. One isn’t real. A new puzzle every day.',
     type: 'website',
   },
+  twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
   // Deliberately no puzzle content in metadata: share previews must not spoil.
   // AdSense ownership meta tag — statically present in HTML so the AdSense
