@@ -317,9 +317,11 @@ export function ResultsView({
       </div>
 
       <div className="toolbar" style={{ marginTop: '2rem' }}>
-        <Link className="action action--ghost" href="/leaderboard">
+        {/* Plain <a> for the same reason as the header link: a client-side
+            navigation can render a reused RSC payload of the board. */}
+        <a className="action action--ghost" href="/leaderboard">
           Today's leaderboard
-        </Link>
+        </a>
         <Link className="action--quiet" href="/how-to-play">
           What counts as a word in {BRAND.name}?
         </Link>
