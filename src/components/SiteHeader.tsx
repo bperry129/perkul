@@ -14,7 +14,14 @@ export async function SiteHeader() {
           <span>{BRAND.name.slice(-1)}</span>
         </Link>
         <nav className="masthead__nav" aria-label="Main">
-          <Link href="/leaderboard">Leaderboard</Link>
+          {/*
+            prefetch={false}: the standings are live data. Prefetching stores a
+            snapshot of the board in the router cache when the page loads, which
+            is then what the player sees on click — stale by construction.
+          */}
+          <Link href="/leaderboard" prefetch={false}>
+            Leaderboard
+          </Link>
           <Link href="/how-to-play">How to play</Link>
           {profile ? <Link href="/stats">Stats</Link> : null}
           {profile?.is_admin ? <Link href="/admin">Admin</Link> : null}

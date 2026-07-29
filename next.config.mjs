@@ -22,6 +22,16 @@ const nextConfig = {
         source: '/api/(.*)',
         headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
       },
+      {
+        // The standings are rendered per request and must never be replayed
+        // from a cache. The RSC payload Next.js fetches for a client-side
+        // <Link> navigation (`/leaderboard?_rsc=...`) is an ordinary cacheable
+        // GET, so without this the browser can serve a board captured by an
+        // older deployment on the first navigation while a refresh shows the
+        // current one.
+        source: '/leaderboard',
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0, must-revalidate' }],
+      },
     ];
   },
 };
