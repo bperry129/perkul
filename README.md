@@ -353,9 +353,16 @@ tests/                   time, scoring, all-time, gameplay, content
 
 ### 9.1 Homepage press badge
 
-`AsSeenOn` renders the "as seen on" badge under the hero, on the **intro screen
-only** — never during a timed round or on the results, where it would be
-clutter. It renders the image alone: the supplied embed code wrapped it in a
+`AsSeenOn` renders the "as seen on" badge **outside the white card, on the
+green, directly beneath it** — press credentials belong next to the product, not
+inside the game surface. Because of that it is rendered by `src/app/page.tsx`
+after the `.shell--narrow` card, not by `GameClient` (which lives inside it).
+
+It stays off the screen during a timed round. The server skips it outright when
+it already knows a round is in progress; for the case where the player presses
+start without a page load, `GameClient` sets `body[data-playing]` and one CSS
+rule pulls the badge. It renders the image alone: the supplied embed code wrapped it in a
+
 UTM-tracked link back to the badge generator, and an outbound advert does not
 belong on the front page of the game. A plain `<img>` rather than `next/image`,
 since a third party renders the badge on demand and there is nothing to

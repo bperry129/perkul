@@ -1,6 +1,14 @@
 /**
- * "As seen on" press badge, shown under the homepage hero.
+ * "As seen on" press badge. It sits *outside* the white card, on the green,
+ * directly beneath it — press credentials belong next to the product, not inside
+ * the game surface, and on the green it reads as a band rather than another
+ * block of page content.
  *
+ * Rendered by the homepage, so it must be placed after the `.shell--narrow`
+ * card rather than inside a component that lives within it. It hides itself
+ * while the clock is running (`body[data-playing]`, set by GameClient).
+ *
+
  * Deliberately NOT wrapped in a link. The supplied embed code pointed at the
  * badge generator's marketing site with UTM tracking attached; an outbound
  * advert has no business on the front page of the game, so only the image is

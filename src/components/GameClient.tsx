@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { BRAND, gameLabel } from '@/lib/brand';
 import { formatElapsed } from '@/lib/time';
 import type { ActiveAttemptPayload, AttemptResult, PublicGameSummary } from '@/lib/types';
-import { AsSeenOn } from './AsSeenOn';
 import { ResultsView } from './ResultsView';
+
 
 
 type Phase = 'idle' | 'starting' | 'playing' | 'submitting' | 'done';
@@ -260,6 +260,21 @@ export function GameClient({
     [attempt, roundIndex],
   );
 
+  /* ------------------------------------------------- chrome while playing --- */
+  // The press badge lives outside this component, on the green below the card,
+  // so it cannot be conditionally rendered from in here. Flag the body instead
+  // and let CSS pull it while the clock is running: nothing but the ten words
+  // during a timed round.
+  useEffect(() => {
+    const playing = phase === 'playing' || phase === 'submitting';
+    if (playing) document.body.dataset.playing = 'true';
+    else delete document.body.dataset.playing;
+    return () => {
+      delete document.body.dataset.playing;
+    };
+  }, [phase]);
+
+
   /* ------------------------------------------------------------------ views */
 
   if (phase === 'done' && result) {
@@ -399,11 +414,7 @@ export function GameClient({
       <p className="clocknote" style={{ marginTop: '1.5rem' }}>
         The clock starts when you press start.
       </p>
-
-      {/* Press badge sits under the hero, and only on the intro: never during a
-          timed round or on the results. */}
-      <AsSeenOn />
-
     </section>
+
   );
 }

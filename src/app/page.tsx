@@ -127,7 +127,8 @@ export default async function HomePage() {
     const onTheBoard = existing.is_ranked && existing.integrity_status === 'valid';
 
     return (
-      <div className="shell shell--narrow">
+      <>
+        <div className="shell shell--narrow">
         <div className="dateline">
           <span>{gameLabel(game.game_number)}</span>
           <span>{formatGameDate(game.active_date)}</span>
@@ -136,6 +137,7 @@ export default async function HomePage() {
         <h1 className="lede">
           You've played <em>today's game</em>.
         </h1>
+
         <p className="standfirst">
           {correct}/{existing.rounds_total} in {formatElapsed(elapsedMs)} —{' '}
           <strong>{formatPoints(perkulScore(correct, elapsedMs))} points</strong>.{' '}
@@ -159,11 +161,14 @@ export default async function HomePage() {
         </div>
 
         {countdownEnabled ? <Countdown targetIso={nextMidnight} /> : null}
+        </div>
 
+        {/* Outside the card, on the green. */}
         <AsSeenOn />
-      </div>
+      </>
     );
   }
+
 
 
   // Mid-game refresh: restore the attempt with its original server start time.
@@ -178,20 +183,32 @@ export default async function HomePage() {
   });
 
   return (
-    <div className="shell shell--narrow">
-      <GameClient
-        game={summary}
-        initialAttempt={active}
-        initialResult={null}
-        showSignupCta={signupCta}
-        sharingEnabled={sharingEnabled}
-      />
-      {!active ? (
-        <div className="dateline" style={{ borderTop: '1px solid var(--rule)', marginTop: '3rem' }}>
-          <span>{gameLabel(game.game_number)}</span>
-          <span>{formatGameDate(game.active_date)}</span>
-        </div>
-      ) : null}
-    </div>
+    <>
+      <div className="shell shell--narrow">
+        <GameClient
+          game={summary}
+          initialAttempt={active}
+          initialResult={null}
+          showSignupCta={signupCta}
+          sharingEnabled={sharingEnabled}
+        />
+        {!active ? (
+          <div
+            className="dateline"
+            style={{ borderTop: '1px solid var(--rule)', marginTop: '3rem' }}
+          >
+            <span>{gameLabel(game.game_number)}</span>
+            <span>{formatGameDate(game.active_date)}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Press credentials sit on the green, under the card — not inside the
+          game surface. Skipped outright when we already know a round is in
+          progress; GameClient's body[data-playing] flag covers the case where
+          the player presses start without a page load. */}
+      {!active ? <AsSeenOn /> : null}
+    </>
   );
+
 }
