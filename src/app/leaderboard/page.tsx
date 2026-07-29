@@ -18,6 +18,36 @@ export const metadata: Metadata = {
   description: "Today's standings. Most right, fastest, wins.",
 };
 
+/**
+ * Today · Smartest players · Total points.
+ *
+ * Plain anchors, not <Link>: standings are live data and a client-side
+ * navigation can be served from a cached RSC payload (see SiteHeader).
+ */
+function BoardTabs({ current }: { current: 'today' | 'smartest' | 'points' }) {
+  return (
+    <nav className="tabs" aria-label="Leaderboard">
+      <a className="tabs__link" href="/leaderboard" aria-current={current === 'today' ? 'page' : undefined}>
+        Today
+      </a>
+      <a
+        className="tabs__link"
+        href="/leaderboard/all-time?tab=smartest"
+        aria-current={current === 'smartest' ? 'page' : undefined}
+      >
+        Smartest players
+      </a>
+      <a
+        className="tabs__link"
+        href="/leaderboard/all-time?tab=points"
+        aria-current={current === 'points' ? 'page' : undefined}
+      >
+        Total points
+      </a>
+    </nav>
+  );
+}
+
 function Row({ row }: { row: LeaderboardRow }) {
   return (
     <tr data-you={row.isYou ? 'true' : undefined}>
@@ -53,6 +83,7 @@ export default async function LeaderboardPage() {
         <p className="standfirst">
           {enabled ? 'There is no live game right now.' : 'The daily leaderboard is currently off.'}
         </p>
+        {enabled ? <BoardTabs current="today" /> : null}
         <Link className="action action--ghost" href="/">
           Back to today's game
         </Link>
@@ -92,6 +123,9 @@ export default async function LeaderboardPage() {
       <h1 className="lede" style={{ fontSize: 'clamp(1.7rem, 6vw, 2.4rem)' }}>
         Today&apos;s standings
       </h1>
+
+      <BoardTabs current="today" />
+
       <p className="standfirst">
         {BRAND.rule} Every correct answer is worth 1,000 points and every second costs 8, so
         accuracy carries the day — but a game left open long enough will lose to a faster one.
@@ -136,6 +170,9 @@ export default async function LeaderboardPage() {
         <Link className="action action--ghost" href="/">
           {mine?.completion_status === 'completed' ? 'Your result' : `Play ${BRAND.name}`}
         </Link>
+        <a className="action action--quiet" href="/leaderboard/all-time">
+          All-time leaderboard
+        </a>
       </div>
     </div>
   );

@@ -4,26 +4,50 @@ import {
   computeStreaks,
   evaluateIntegrity,
   percentileFromRank,
+  perkulScore,
   rankWithin,
   sortLeaderboard,
 } from '@/lib/scoring';
 import { buildShareText } from '@/lib/share';
 
 describe('leaderboard ranking', () => {
-  it('puts a 10/10 above a much faster 9/10 (the fundamental rule)', () => {
+  // THE RULE: most right in the least time wins. Accuracy dominates normal
+  // play (one correct answer is worth ~125 seconds), but the clock genuinely
+  // counts, so a pathologically slow perfect game can lose.
+  it('puts a 10/10 above a much faster 9/10 within normal play', () => {
     const perfectSlow = { correctCount: 10, elapsedMs: 72_450 };
     const nineFast = { correctCount: 9, elapsedMs: 31_820 };
     expect(compareRanked(perfectSlow, nineFast)).toBeLessThan(0);
     expect(sortLeaderboard([nineFast, perfectSlow])[0]).toBe(perfectSlow);
   });
 
-  it('never lets speed compensate for accuracy at any margin', () => {
-    const pool = [
-      { correctCount: 9, elapsedMs: 1 },
-      { correctCount: 10, elapsedMs: 6 * 60 * 60 * 1000 - 1 },
-    ];
-    const sorted = sortLeaderboard(pool);
-    expect(sorted[0].correctCount).toBe(10);
+  it('still puts a 10/10 in 2:00 above a 9/10 in 1:00', () => {
+    const perfect = { correctCount: 10, elapsedMs: 120_000 }; // 9,040
+    const nine = { correctCount: 9, elapsedMs: 60_000 }; //      8,520
+    expect(perkulScore(10, 120_000)).toBeGreaterThan(perkulScore(9, 60_000));
+    expect(sortLeaderboard([nine, perfect])[0]).toBe(perfect);
+  });
+
+  it('puts a 10/10 that took an hour BELOW a 9/10 that took a minute', () => {
+    const perfectHour = { correctCount: 10, elapsedMs: 60 * 60 * 1000 }; // 0
+    const nineFast = { correctCount: 9, elapsedMs: 60_000 }; //             8,520
+    expect(compareRanked(nineFast, perfectHour)).toBeLessThan(0);
+    const sorted = sortLeaderboard([perfectHour, nineFast]);
+    expect(sorted[0]).toBe(nineFast);
+    expect(sorted[0].correctCount).toBe(9);
+  });
+
+  it('never returns a negative score', () => {
+    expect(perkulScore(0, 6 * 60 * 60 * 1000)).toBe(0);
+    expect(perkulScore(10, 6 * 60 * 60 * 1000)).toBe(0);
+    expect(perkulScore(10, -5_000)).toBe(10 * 1000);
+  });
+
+  it('crosses over well outside real play (~4 minutes per answer margin)', () => {
+    // A perfect game stays ahead of a fast 9/10 for over three minutes.
+    expect(perkulScore(10, 180_000)).toBeGreaterThan(perkulScore(9, 60_000));
+    // By five minutes it has fallen behind.
+    expect(perkulScore(10, 300_000)).toBeLessThan(perkulScore(9, 60_000));
   });
 
   it('breaks ties on time, then on who finished first', () => {

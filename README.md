@@ -6,7 +6,8 @@ Perkul is a daily timed vocabulary game. Ten rounds, five words per round, exact
 fabricated word in each. You get one choice per round, no feedback until the end.
 **Most right, fastest, wins** — ranking is a single score, and the clock genuinely counts.
 
-- First game: **July 28, 2026** = Perkul **#001**
+- First game: **July 28, 2026** = Perkul **#210** (`BRAND.firstGameNumber` — launch day
+  deliberately does not read "#1")
 - Seeded content bank: **20 games / 200 rounds / 1,000 options** (2026-07-28 → 2026-08-16)
 - Daily rollover: midnight **America/New_York** (EDT/EST handled automatically, no cron required)
 
@@ -84,7 +85,7 @@ npm run content:check
 
 ```bash
 npm run dev     # http://localhost:3000
-npm test        # 82 tests
+npm test        # 95 tests
 npm run typecheck
 npm run build
 ```
@@ -199,6 +200,39 @@ database agrees with the TypeScript comparator.
 Grades (`A+` … `F`) are cosmetic, accuracy-dominant, and configurable in
 Admin → Settings. They never affect ordering.
 
+### 6.1 All-time boards
+
+`/leaderboard/all-time` answers "who is good at this game" rather than "who won
+today", on two tabs:
+
+| Tab | Ranks by | Minimum |
+| --- | --- | --- |
+| **Smartest players** (default) | average `score` per game | 5 completed games |
+| **Total points** | sum of `score` across every game played | 1 game |
+
+The average board exists so that playing *well* beats merely playing *often* —
+a player who shows up twice a week and scores highly is not buried under a
+daily grinder. Like any ratio it is meaningless on a tiny sample, so the 5-game
+floor is enforced in code and stated on the page.
+
+Both boards reuse the daily eligibility rules (ranked, completed, integrity
+`valid`, opted in) and the same per-game `perkulScore()` — no second scoring
+rule exists. Attempts are attributed across days by account, then anonymous
+session cookie, then simulated-player name; anything unattributable is left off
+rather than merged into one meaningless "Guest" row. Only the best attempt per
+player per game counts, so a stray duplicate can never double-count.
+
+| Where | What |
+| --- | --- |
+| `src/lib/all-time-rank.ts` | pure ordering, tie-breaks and the games-played floor (`MIN_GAMES_FOR_AVERAGE`) |
+| `src/lib/all-time.ts` | the aggregate read |
+| `tests/all-time.test.ts` | asserts the two ladders rank the same field differently |
+
+Aggregation is done in TypeScript, not SQL, so the score formula stays in one
+place and the feature needs no migration. At one game a day this is a single
+indexed read; if daily volume grows enough to notice, move it to a materialised
+view keyed on `(player, game)`.
+
 ---
 
 ## 7. Comparisons: real vs benchmark
@@ -261,7 +295,7 @@ src/content/             the authored 20-day bank + dev fixture (TOVEN/BRUME)
 src/app/                 public pages, /admin, /api route handlers
 src/components/          GameClient, ResultsView, Countdown, forms
 scripts/                 seed, make-admin, validate-content, smoke, verify-score
-tests/                   time, scoring, gameplay, content
+tests/                   time, scoring, all-time, gameplay, content
 ```
 
 ---
@@ -274,7 +308,8 @@ npm test
 
 Covers NY date switching and DST boundaries, 10-round and one-fake enforcement,
 one-choice-per-round, accuracy calculation, score-based leaderboard ordering
-(including the slow-perfect-game case), first-attempt-ranked and replay-unranked, expired games,
+(including the slow-perfect-game case), the two all-time ladders and the 5-game
+floor, first-attempt-ranked and replay-unranked, expired games,
 anonymous claiming, answer data never reaching the client, feature flags, the
 comparison sample threshold, deterministic benchmark ranking, import validation,
 duplicate fake detection, and a full audit of the 200 seeded rounds.
@@ -290,7 +325,8 @@ duplicate fake detection, and a full audit of the 200 seeded rounds.
    `npm run seed` against the production project, then `npm run verify:score`.
 4. Supabase → Auth → URL Configuration: add `https://perkul.com/auth/callback`.
 5. Enable Google in Supabase → Auth → Providers.
-6. Promote your admin account, then confirm `/admin` loads and `/` shows game #001.
+6. Promote your admin account, then confirm `/admin` loads, `/` shows the launch game,
+   and `/leaderboard/all-time` renders both tabs.
 
 `SUPABASE_SERVICE_ROLE_KEY` is server-only. It is never imported into a client
 component; `src/lib/supabase/admin.ts` throws if it is loaded in the browser.

@@ -830,6 +830,43 @@ details.expand > summary:hover { color: var(--brand-deep); }
 
 /* ------------------------------------------------------------ leaderboard -- */
 
+/* Leaderboard tabs: Today · Smartest players · Total points ---------------- */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1rem 0 0.4rem;
+}
+
+.tabs__link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--tile);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.tabs__link:hover {
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand-dark);
+}
+
+.tabs__link[aria-current='page'] {
+  background: var(--panel);
+  border-color: var(--panel);
+  color: var(--paper);
+}
+
 .board {
   width: 100%;
   border-collapse: collapse;

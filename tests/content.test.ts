@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SEED_GAMES } from '@/content';
+import { BRAND } from '@/lib/brand';
 import { FIXTURE_ROUND } from '@/content/fixtures';
 import { buildGame } from '@/content/format';
 import { normalizeWord } from '@/lib/content/draft';
@@ -23,12 +24,15 @@ const acceptedFromBank = () => {
 describe('the initial 20-day bank', () => {
   const summary = summarizeBank(SEED_GAMES);
 
-  it('covers 2026-07-28 through 2026-08-16 with game numbers 1..20', () => {
+  it('covers 2026-07-28 through 2026-08-16, numbered from BRAND.firstGameNumber', () => {
     expect(SEED_GAMES).toHaveLength(20);
     const expectedDates = Array.from({ length: 20 }, (_, i) => addDays('2026-07-28', i));
     expect(summary.dates).toEqual(expectedDates);
+    // The bank deliberately does not start at #1: launch day is
+    // BRAND.firstGameNumber (#210), so the game does not look brand new on
+    // the day it opens.
     expect(SEED_GAMES.map((g) => g.gameNumber).sort((a, b) => a - b)).toEqual(
-      Array.from({ length: 20 }, (_, i) => i + 1),
+      Array.from({ length: 20 }, (_, i) => BRAND.firstGameNumber + i),
     );
   });
 
