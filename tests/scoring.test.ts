@@ -3,11 +3,15 @@ import {
   compareRanked,
   computeStreaks,
   evaluateIntegrity,
+  formatPoints,
+  maxPerkulScore,
   percentileFromRank,
   perkulScore,
   rankWithin,
+  scoreBreakdown,
   sortLeaderboard,
 } from '@/lib/scoring';
+
 import { buildShareText } from '@/lib/share';
 
 describe('leaderboard ranking', () => {
@@ -93,7 +97,42 @@ describe('leaderboard ranking', () => {
   });
 });
 
+describe('points shown on the results page', () => {
+  it('is out of 10,000 for a ten-round game', () => {
+    expect(maxPerkulScore(10)).toBe(10_000);
+    expect(maxPerkulScore(5)).toBe(5_000);
+    // Defaults to the standard ten rounds.
+    expect(maxPerkulScore()).toBe(10_000);
+  });
+
+  it('itemises the same number the ladder sorts on', () => {
+    const shown = scoreBreakdown(9, 60_000);
+    expect(shown.score).toBe(perkulScore(9, 60_000)); // 8,520
+    expect(shown.maxScore).toBe(10_000);
+    expect(shown.gross).toBe(9_000);
+    expect(shown.penalty).toBe(480);
+    expect(shown.gross - shown.penalty).toBe(shown.score);
+  });
+
+  it('never displays arithmetic that undercuts the zero floor', () => {
+    // A 10/10 left open an hour scores 0; the shown penalty is capped at gross
+    // so "10,000 − 28,800" is never printed.
+    const shown = scoreBreakdown(10, 60 * 60 * 1000);
+    expect(shown.score).toBe(0);
+    expect(shown.penalty).toBe(10_000);
+    expect(shown.penaltyUncapped).toBe(28_800);
+    expect(shown.gross - shown.penalty).toBe(shown.score);
+  });
+
+  it('formats points with grouped thousands', () => {
+    expect(formatPoints(10_000)).toBe('10,000');
+    expect(formatPoints(8_520)).toBe('8,520');
+    expect(formatPoints(0)).toBe('0');
+  });
+});
+
 describe('streaks (America/New_York calendar dates)', () => {
+
   it('counts consecutive days ending today', () => {
     const streaks = computeStreaks(
       ['2026-07-26', '2026-07-27', '2026-07-28'],

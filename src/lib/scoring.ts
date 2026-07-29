@@ -35,6 +35,47 @@ export function perkulScore(correctCount: number, elapsedMs: number): number {
   return Math.max(0, gross - penalty);
 }
 
+/**
+ * The ceiling for a game: every round correct with the clock at zero. Ten
+ * rounds => 10,000, which is the "out of" number shown on the results page.
+ */
+export function maxPerkulScore(roundsTotal = 10): number {
+  return Math.max(0, roundsTotal) * CORRECT_POINTS;
+}
+
+/**
+ * The same number as `perkulScore()`, itemised for display. `penalty` is capped
+ * at `gross` so the shown arithmetic always adds up to the floored score, while
+ * `penaltyUncapped` keeps the raw time cost for anyone who wants it.
+ */
+export function scoreBreakdown(
+  correctCount: number,
+  elapsedMs: number,
+  roundsTotal = 10,
+): {
+  score: number;
+  maxScore: number;
+  gross: number;
+  penalty: number;
+  penaltyUncapped: number;
+} {
+  const gross = correctCount * CORRECT_POINTS;
+  const penaltyUncapped = Math.round((Math.max(0, elapsedMs) / 1000) * POINTS_PER_SECOND);
+  return {
+    score: perkulScore(correctCount, elapsedMs),
+    maxScore: maxPerkulScore(roundsTotal),
+    gross,
+    penalty: Math.min(gross, penaltyUncapped),
+    penaltyUncapped,
+  };
+}
+
+/** 8,520 — grouped thousands, stable across locales. */
+export function formatPoints(points: number): string {
+  return Math.round(points).toLocaleString('en-US');
+}
+
+
 export type RankableAttempt = {
   correctCount: number;
   elapsedMs: number;

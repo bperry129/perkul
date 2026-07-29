@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BRAND, gameLabel } from '@/lib/brand';
+import { formatPoints } from '@/lib/scoring';
 import { formatElapsed, formatSeconds } from '@/lib/time';
+
 import type { AttemptResult, RoundResult } from '@/lib/types';
 
 /* ------------------------------------------------------------------ marks -- */
@@ -247,6 +249,19 @@ export function ResultsView({
         {result.grade ? <div className="score__grade">Grade {result.grade}</div> : null}
       </div>
 
+      {/* The number the leaderboard actually sorts on, out of the 10,000 ceiling. */}
+      <div className="points">
+        <div className="points__figure">
+          <span className="points__value">{formatPoints(result.score)}</span>
+          <span className="points__max">/ {formatPoints(result.maxScore)}</span>
+        </div>
+        <div className="points__label">Points</div>
+        <div className="points__maths">
+          {formatPoints(result.scoreGross)} for {result.correctCount} right
+          {result.scorePenalty > 0 ? <> − {formatPoints(result.scorePenalty)} for time</> : null}
+        </div>
+      </div>
+
       <p className="label">
         {result.correctCount === result.roundsTotal
           ? 'Clean.'
@@ -256,6 +271,7 @@ export function ResultsView({
         {' · '}
         {formatElapsed(result.elapsedMs)}
       </p>
+
 
       <Standing result={result} />
 

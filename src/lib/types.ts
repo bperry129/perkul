@@ -181,9 +181,18 @@ export type AttemptResult = {
   correctCount: number;
   roundsTotal: number;
   elapsedMs: number;
+  /** Perkul score for this attempt — the same number the ladder sorts on. */
+  score: number;
+  /** Ceiling for this game (roundsTotal × 1000), i.e. 10,000 for ten rounds. */
+  maxScore: number;
+  /** Points earned from correct answers, before the time cost. */
+  scoreGross: number;
+  /** Points surrendered to the clock, capped so gross − penalty = score. */
+  scorePenalty: number;
   grade: Grade | null;
   isRanked: boolean;
   integrityStatus: IntegrityStatus;
+
   marks: boolean[];
   rounds: RoundResult[];
   comparison: ResultComparison;

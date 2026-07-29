@@ -85,7 +85,8 @@ npm run content:check
 
 ```bash
 npm run dev     # http://localhost:3000
-npm test        # 95 tests
+npm test        # 99 tests
+
 npm run typecheck
 npm run build
 ```
@@ -200,7 +201,20 @@ database agrees with the TypeScript comparator.
 Grades (`A+` … `F`) are cosmetic, accuracy-dominant, and configurable in
 Admin → Settings. They never affect ordering.
 
+### 6.0 Points on the results page
+
+The results page shows the Perkul score as **points out of 10,000** (`roundsTotal ×
+1000`), with the arithmetic spelled out beneath it — `9,000 for 9 right − 480 for
+time`. It is the same `perkulScore()` the ladder sorts on, recomputed from
+`correct_count` + `elapsed_ms` rather than read from the generated
+`attempts.score` column, so it works on any schema version. The displayed time
+penalty is capped at the gross so the shown sum always equals the floored score
+(a 10/10 left open an hour reads `0`, never a negative). Helpers live in
+`src/lib/scoring.ts` (`maxPerkulScore`, `scoreBreakdown`, `formatPoints`) and are
+covered by `tests/scoring.test.ts`.
+
 ### 6.1 All-time boards
+
 
 `/leaderboard/all-time` answers "who is good at this game" rather than "who won
 today", on two tabs:

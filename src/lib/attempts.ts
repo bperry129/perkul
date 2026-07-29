@@ -11,7 +11,13 @@ import {
 } from './games';
 import { flagEnabled, getComparisonSettings } from './flags';
 import { resolveComparisonSource, roundStatsAllowed } from './comparison';
-import { computeStreaks, evaluateIntegrity, percentileFromRank } from './scoring';
+import {
+  computeStreaks,
+  evaluateIntegrity,
+  percentileFromRank,
+  scoreBreakdown,
+} from './scoring';
+
 import { gradeFor } from './grades';
 import {
   DEFAULT_BENCHMARK_DISTRIBUTION,
@@ -669,13 +675,23 @@ export async function buildAttemptResult(
 
   const records = attempt.user_id ? await buildPersonalRecords(attempt) : null;
 
+  // Recomputed rather than read from attempts.score: the generated column only
+  // exists where migrations/20260728120000_score.sql has been applied, and
+  // perkulScore() is the very formula it is generated from.
+  const points = scoreBreakdown(correctCount, elapsedMs, attempt.rounds_total);
+
   return {
     attemptId: attempt.id,
     game: gameSummary(game),
     correctCount,
     roundsTotal: attempt.rounds_total,
     elapsedMs,
+    score: points.score,
+    maxScore: points.maxScore,
+    scoreGross: points.gross,
+    scorePenalty: points.penalty,
     grade,
+
     isRanked: attempt.is_ranked,
     integrityStatus: attempt.integrity_status,
     marks,
