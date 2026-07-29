@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Baloo_2, Nunito, Spline_Sans_Mono } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { BRAND } from '@/lib/brand';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -58,10 +59,39 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      {/* Google AdSense — publisher ca-pub-3524846850046440 */}
+      <Script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3524846850046440"
+        crossOrigin="anonymous"
+        strategy="afterInteractive"
+      />
       <body>
         <SiteHeader />
         <main>{children}</main>
         <SiteFooter />
+        {/* StatCounter — project 13338902, perkul.com */}
+        <Script id="statcounter-vars" strategy="afterInteractive">{`
+          var sc_project=13338902;
+          var sc_invisible=1;
+          var sc_security="8069eb92";
+        `}</Script>
+        <Script
+          src="https://www.statcounter.com/counter/counter.js"
+          strategy="afterInteractive"
+        />
+        <noscript>
+          <div className="statcounter">
+            <a title="site stats" href="https://statcounter.com/" target="_blank" rel="noreferrer">
+              <img
+                className="statcounter"
+                src="https://c.statcounter.com/13338902/0/8069eb92/1/"
+                alt="site stats"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </a>
+          </div>
+        </noscript>
       </body>
     </html>
   );
