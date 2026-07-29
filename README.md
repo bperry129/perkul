@@ -229,9 +229,12 @@ player per game counts, so a stray duplicate can never double-count.
 | `tests/all-time.test.ts` | asserts the two ladders rank the same field differently |
 
 Aggregation is done in TypeScript, not SQL, so the score formula stays in one
-place and the feature needs no migration. At one game a day this is a single
-indexed read; if daily volume grows enough to notice, move it to a materialised
-view keyed on `(player, game)`.
+place and the feature needs no migration. Each game's score is recomputed with
+`perkulScore()` rather than read from the generated `attempts.score` column, so
+these boards work even on a project where `20260728120000_score.sql` has not
+been applied yet. At one game a day this is a single indexed read; if daily
+volume grows enough to notice, move it to a materialised view keyed on
+`(player, game)`.
 
 ---
 

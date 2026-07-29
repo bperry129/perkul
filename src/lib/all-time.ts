@@ -79,7 +79,6 @@ type AttemptRow = {
   display_name_override: string | null;
   correct_count: number | null;
   elapsed_ms: number | null;
-  score: number | null;
 };
 
 type ProfileRow = {
@@ -122,8 +121,17 @@ export function identityPlayerKey(identity: Identity): string | null {
   return null;
 }
 
+/**
+ * Always recomputed from `correct_count` + `elapsed_ms`, never read from the
+ * generated `attempts.score` column.
+ *
+ * That column ships in `20260728120000_score.sql`, and a project that has not
+ * had that migration applied yet has no such column — selecting it fails the
+ * entire query ("column attempts.score does not exist"). `perkulScore()` is the
+ * very formula the column is generated from, so the numbers agree either way
+ * and these boards work on any schema version.
+ */
 function scoreOf(row: AttemptRow): number {
-  if (row.score != null) return Number(row.score);
   return perkulScore(Number(row.correct_count ?? 0), Number(row.elapsed_ms ?? 0));
 }
 
@@ -135,7 +143,7 @@ async function loadEligibleAttempts(includeSimulated: boolean): Promise<AttemptR
     let query = db
       .from('attempts')
       .select(
-        'id, game_id, user_id, anonymous_session_id, display_name_override, correct_count, elapsed_ms, score',
+        'id, game_id, user_id, anonymous_session_id, display_name_override, correct_count, elapsed_ms',
       )
       .eq('is_ranked', true)
       .eq('completion_status', 'completed')

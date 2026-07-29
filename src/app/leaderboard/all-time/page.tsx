@@ -2,7 +2,12 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BRAND } from '@/lib/brand';
 import { isSupabaseConfigured } from '@/lib/supabase/admin';
-import { getAllTimeLeaderboard, MIN_GAMES_FOR_AVERAGE, type AllTimeRow } from '@/lib/all-time';
+import {
+  getAllTimeLeaderboard,
+  MIN_GAMES_FOR_AVERAGE,
+  type AllTimeBoard,
+  type AllTimeRow,
+} from '@/lib/all-time';
 import { getIdentity } from '@/lib/auth';
 import { flagEnabled } from '@/lib/flags';
 import { logEvent } from '@/lib/analytics';
@@ -39,6 +44,31 @@ function parseTab(value: string | string[] | undefined): Tab {
 const whole = (n: number) => Math.round(n).toLocaleString('en-US');
 const oneDecimal = (n: number) =>
   n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/**
+ * Plain anchors, not <Link>: these boards are live data, and a client-side
+ * navigation can be served from a cached RSC payload. Same reasoning as the
+ * Leaderboard link in SiteHeader.
+ */
+function BoardTabs({ current }: { current: Tab }) {
+  return (
+    <nav className="tabs" aria-label="Leaderboard">
+      <a className="tabs__link" href="/leaderboard">
+        Today
+      </a>
+      {TABS.map((t) => (
+        <a
+          key={t.id}
+          className="tabs__link"
+          href={t.href}
+          aria-current={t.id === current ? 'page' : undefined}
+        >
+          {t.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
 
 function Row({ row, tab }: { row: AllTimeRow; tab: Tab }) {
   return (
@@ -95,11 +125,39 @@ export default async function AllTimeLeaderboardPage({
   }
 
   const identity = await getIdentity();
-  const board = await getAllTimeLeaderboard({
-    metric: tab === 'points' ? 'total' : 'average',
-    limit: 250,
-    identity,
-  });
+
+  // Fail soft. A standings page is not worth a whole-page server exception:
+  // if the aggregate cannot be read, say so and keep the navigation working.
+  let board: AllTimeBoard | null = null;
+  try {
+    board = await getAllTimeLeaderboard({
+      metric: tab === 'points' ? 'total' : 'average',
+      limit: 250,
+      identity,
+    });
+  } catch (error) {
+    console.error('[all-time] could not build the board', error);
+  }
+
+  if (!board) {
+    return (
+      <div className="shell shell--narrow">
+        <h1 className="lede">All-time leaderboard</h1>
+        <BoardTabs current={tab} />
+        <div className="notice">
+          All-time standings could not be loaded just now. Today&apos;s board is still live.
+        </div>
+        <div className="toolbar">
+          <Link className="action action--ghost" href="/">
+            Play {BRAND.name}
+          </Link>
+          <a className="action action--quiet" href="/leaderboard">
+            Today&apos;s standings
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   await logEvent({
     name: 'leaderboard_view',
@@ -127,24 +185,7 @@ export default async function AllTimeLeaderboardPage({
         {tab === 'smartest' ? 'Smartest players' : 'Most points, all time'}
       </h1>
 
-      <nav className="tabs" aria-label="Leaderboard">
-        {/* Plain anchors: these boards are live data, and a client-side
-            navigation can be served from a cached RSC payload. Same reasoning
-            as the Leaderboard link in SiteHeader. */}
-        <a className="tabs__link" href="/leaderboard">
-          Today
-        </a>
-        {TABS.map((t) => (
-          <a
-            key={t.id}
-            className="tabs__link"
-            href={t.href}
-            aria-current={t.id === tab ? 'page' : undefined}
-          >
-            {t.label}
-          </a>
-        ))}
-      </nav>
+      <BoardTabs current={tab} />
 
       <p className="standfirst">
         {tab === 'smartest' ? (
