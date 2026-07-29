@@ -1026,6 +1026,20 @@ details.expand > summary:hover { color: var(--brand-deep); }
   font-size: 1.06rem;
   font-weight: 700;
 }
+
+/* A row that goes somewhere (Recent games -> that game's result). Underlined
+   only on hover so thirty rows of history do not read as thirty links. */
+.board__link {
+  color: var(--ink);
+  text-decoration: none;
+}
+.board__link:hover {
+  color: var(--brand-dark);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+}
+
 .board__gap td {
   border: none;
   color: var(--gray-light);

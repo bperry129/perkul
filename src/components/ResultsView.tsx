@@ -338,10 +338,20 @@ export function ResultsView({
         <a className="action action--ghost" href="/leaderboard">
           Today's leaderboard
         </a>
+        {/* A result should never be a dead end. Plain <a> so the homepage is
+            re-rendered on the server rather than restored from a cached payload
+            of this same screen. */}
+        <a className="action action--ghost" href="/">
+          Back to {BRAND.name}
+        </a>
+        <Link className="action--quiet" href="/stats">
+          Your past games
+        </Link>
         <Link className="action--quiet" href="/how-to-play">
           What counts as a word in {BRAND.name}?
         </Link>
       </div>
+
     </section>
   );
 }

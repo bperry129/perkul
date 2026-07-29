@@ -80,6 +80,8 @@ export default async function StatsPage() {
       <h2 className="admin-title" style={{ fontSize: '1.3rem', marginTop: '2.5rem' }}>
         Recent games
       </h2>
+      <p className="label">Pick a game to read the full result again.</p>
+
 
       {history.length === 0 ? (
         <p className="standfirst">
@@ -101,10 +103,20 @@ export default async function StatsPage() {
                 <td style={{ fontFamily: 'var(--mono)', fontSize: '0.8rem' }}>
                   {formatGameDateShort(row.activeDate)}
                 </td>
+                {/* One link per row, on the game number: a result is a place you
+                    can go back to, and this is the only obvious way in for a
+                    game you played weeks ago. */}
                 <td className="board__name">
-                  #{padGameNumber(row.gameNumber)}
+                  <Link
+                    className="board__link"
+                    href={`/results/${row.attemptId}`}
+                    aria-label={`Full result for game number ${row.gameNumber}, ${row.correctCount} of ${row.roundsTotal} correct`}
+                  >
+                    #{padGameNumber(row.gameNumber)}
+                  </Link>
                   {!row.isRanked ? <span className="label"> · practice</span> : null}
                 </td>
+
                 <td>
                   {row.correctCount}/{row.roundsTotal}
                   <span className="label">

@@ -166,6 +166,27 @@ tenth selection
 Guests play the full game. Signing up afterward claims the anonymous attempt through
 a server-side cookie match (`/api/attempt/claim`), not a browser-supplied attempt ID.
 
+### 5.1 Where a finished game lives
+
+A result has its own permanent URL: **`/results/[attemptId]`**. Ownership is the
+entire access rule — `buildAttemptResult` returns nothing unless `ownsAttempt`
+matches the requester by account or anonymous session cookie — and the route
+answers **404, not 403**, so the URL cannot be used to probe which attempt ids
+exist. It is `noindex`: it is personal, and it is full of answers.
+
+Once you have played, **`/`** is a short landing (score, countdown, where to go
+next) rather than the whole results page. Before, the homepage rendered the
+results forever, so pressing the wordmark looked broken and there was no way
+back to the front page. The landing reads the score straight off the attempt row
+with `perkulScore()` instead of assembling every round's answer data just to
+print one number.
+
+Every route out of a result is now explicit: **Recent games** on `/stats` links
+each game to its result, and the results toolbar carries *Back to Perkul* and
+*Your past games*. The one thing that only exists in the moment is *Play again
+for fun*, which still needs the client-side attempt in `GameClient`.
+
+
 ---
 
 ## 6. Ranking
