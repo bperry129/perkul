@@ -1,0 +1,10 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Perkul">
+  <!-- CONCEPT 01 - "THE BLANK": the counter of the P is not a hole but a
+       capsule - the blank line of a fill-in-the-blank. -->
+  <rect width="512" height="512" rx="112" fill="#4db588"/>
+  <g fill="#ffffff">
+    <rect x="116" y="76" width="88" height="360" rx="18"/>
+    <path d="M188 76h108a96 96 0 0 1 0 192H188z"/>
+  </g>
+  <rect x="236" y="152" width="104" height="44" rx="22" fill="#4db588"/>
+</svg>

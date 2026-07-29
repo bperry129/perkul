@@ -1,0 +1,12 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Perkul">
+  <!-- CONCEPT 02 - "FIVE": the P is built from exactly five tiles, because
+       every round shows five words. Four solid. One hollow - the fake. -->
+  <rect width="512" height="512" rx="112" fill="#4db588"/>
+  <g fill="#ffffff">
+    <rect x="124" y="84" width="112" height="112" rx="26"/>
+    <rect x="250" y="84" width="112" height="112" rx="26"/>
+    <rect x="124" y="210" width="112" height="112" rx="26"/>
+    <rect x="124" y="336" width="112" height="112" rx="26"/>
+  </g>
+  <rect x="260" y="220" width="92" height="92" rx="18" fill="none" stroke="#ffffff" stroke-width="20"/>
+</svg>

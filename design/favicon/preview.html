@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Perkul — favicon concepts</title>
+    <style>
+      :root {
+        --brand: #4db588;
+        --ink: #21332c;
+        --rule: #e4e9e6;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 40px;
+        background: #f4f7f5;
+        color: var(--ink);
+        font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.02em; }
+      .sub { color: #52655e; margin: 0 0 32px; }
+      .row {
+        background: #fff;
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin-bottom: 18px;
+        display: grid;
+        grid-template-columns: 210px 1fr 260px;
+        gap: 24px;
+        align-items: center;
+      }
+      .name { font-weight: 700; font-size: 15px; }
+      .idea { color: #52655e; font-size: 13px; margin-top: 2px; }
+      .sizes { display: flex; align-items: flex-end; gap: 22px; }
+      .size { text-align: center; }
+      .size span {
+        display: block;
+        margin-top: 8px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: #74857e;
+        text-transform: uppercase;
+      }
+      img { display: block; image-rendering: auto; }
+      /* A realistic browser-tab strip: this is the test that actually matters. */
+      .tabstrip {
+        background: #dee3e6;
+        border-radius: 10px 10px 0 0;
+        padding: 8px 8px 0;
+        display: flex;
+        gap: 4px;
+      }
+      .tab {
+        background: #fff;
+        border-radius: 8px 8px 0 0;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        color: #3c4a44;
+        white-space: nowrap;
+      }
+      .tab.dim { background: #eceff1; color: #7b8781; }
+      .dark { background: var(--ink); border-color: var(--ink); }
+      .dark .name, .dark .idea { color: #cfdad4; }
+    </style>
+  </head>
+  <body>
+    <h1>Perkul — favicon concepts</h1>
+    <p class="sub">
+      Five distinct constructions, not variations. Judge them at 16 and 32 px — the
+      128 px rendering is flattery.
+    </p>
+
+    <div class="row">
+      <div>
+        <div class="name">01 · The Blank</div>
+        <div class="idea">Counter becomes a fill-in-the-blank line</div>
+      </div>
+      <div class="sizes">
+        <div class="size"><img src="01-blank.svg" width="128" height="128" alt="" /><span>128</span></div>
+        <div class="size"><img src="01-blank.svg" width="64" height="64" alt="" /><span>64</span></div>
+        <div class="size"><img src="01-blank.svg" width="48" height="48" alt="" /><span>48</span></div>
+        <div class="size"><img src="01-blank.svg" width="32" height="32" alt="" /><span>32</span></div>
+        <div class="size"><img src="01-blank.svg" width="16" height="16" alt="" /><span>16</span></div>
+      </div>
+      <div class="tabstrip">
+        <div class="tab"><img src="01-blank.svg" width="16" height="16" alt="" />Perkul</div>
+        <div class="tab dim"><img src="01-blank.svg" width="16" height="16" alt="" />Perkul</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="name">02 · Five</div>
+        <div class="idea">Five tiles, one hollow — the fake word</div>
+      </div>
+      <div class="sizes">
+        <div class="size"><img src="02-five.svg" width="128" height="128" alt="" /><span>128</span></div>
+        <div class="size"><img src="02-five.svg" width="64" height="64" alt="" /><span>64</span></div>
+        <div class="size"><img src="02-five.svg" width="48" height="48" alt="" /><span>48</span></div>
+        <div class="size"><img src="02-five.svg" width="32" height="32" alt="" /><span>32</span></div>
+        <div class="size"><img src="02-five.svg" width="16" height="16" alt="" /><span>16</span></div>
+      </div>
+      <div class="tabstrip">
+        <div class="tab"><img src="02-five.svg" width="16" height="16" alt="" />Perkul</div>
+        <div class="tab dim"><img src="02-five.svg" width="16" height="16" alt="" />Perkul</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="name">03 · The Gap</div>
+        <div class="idea">One stroke, one deliberate break</div>
+      </div>
+      <div class="sizes">
+        <div class="size"><img src="03-gap.svg" width="128" height="128" alt="" /><span>128</span></div>
+        <div class="size"><img src="03-gap.svg" width="64" height="64" alt="" /><span>64</span></div>
+        <div class="size"><img src="03-gap.svg" width="48" height="48" alt="" /><span>48</span></div>
+        <div class="size"><img src="03-gap.svg" width="32" height="32" alt="" /><span>32</span></div>
+        <div class="size"><img src="03-gap.svg" width="16" height="16" alt="" /><span>16</span></div>
+      </div>
+      <div class="tabstrip">
+        <div class="tab"><img src="03-gap.svg" width="16" height="16" alt="" />Perkul</div>
+        <div class="tab dim"><img src="03-gap.svg" width="16" height="16" alt="" />Perkul</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="name">04 · Two Letters</div>
+        <div class="idea">A P that is also a Q</div>
+      </div>
+      <div class="sizes">
+        <div class="size"><img src="04-pq.svg" width="128" height="128" alt="" /><span>128</span></div>
+        <div class="size"><img src="04-pq.svg" width="64" height="64" alt="" /><span>64</span></div>
+        <div class="size"><img src="04-pq.svg" width="48" height="48" alt="" /><span>48</span></div>
+        <div class="size"><img src="04-pq.svg" width="32" height="32" alt="" /><span>32</span></div>
+        <div class="size"><img src="04-pq.svg" width="16" height="16" alt="" /><span>16</span></div>
+      </div>
+      <div class="tabstrip">
+        <div class="tab"><img src="04-pq.svg" width="16" height="16" alt="" />Perkul</div>
+        <div class="tab dim"><img src="04-pq.svg" width="16" height="16" alt="" />Perkul</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="name">05 · The Cell</div>
+        <div class="idea">The bowl is an empty answer cell</div>
+      </div>
+      <div class="sizes">
+        <div class="size"><img src="05-cell.svg" width="128" height="128" alt="" /><span>128</span></div>
+        <div class="size"><img src="05-cell.svg" width="64" height="64" alt="" /><span>64</span></div>
+        <div class="size"><img src="05-cell.svg" width="48" height="48" alt="" /><span>48</span></div>
+        <div class="size"><img src="05-cell.svg" width="32" height="32" alt="" /><span>32</span></div>
+        <div class="size"><img src="05-cell.svg" width="16" height="16" alt="" /><span>16</span></div>
+      </div>
+      <div class="tabstrip">
+        <div class="tab"><img src="05-cell.svg" width="16" height="16" alt="" />Perkul</div>
+        <div class="tab dim"><img src="05-cell.svg" width="16" height="16" alt="" />Perkul</div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Perkul">
+  <!--
+    PERKUL PRIMARY MARK - "THE GAP"
+
+    One continuous stroke, drawn with a single deliberate break where the bowl
+    should close. An unfinished letter: the missing piece is the puzzle. Reads
+    as a P instantly, but the silhouette is not one any typeface would give you.
+
+    The break is cut rather than drawn, because round stroke caps closed the
+    opening back up below 64px and the whole idea disappeared at favicon size.
+    Cutting it keeps a 58-unit opening (~11% of the canvas) that still reads
+    at 16px.
+
+    Geometry is deliberate: 72-unit stroke, stem centred on x=150, bowl radius
+    74. Do not scale the stroke independently of the arc.
+  -->
+  <rect width="512" height="512" rx="112" fill="#4db588"/>
+  <g fill="none" stroke="#ffffff" stroke-width="72" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 142V418"/>
+    <path d="M150 142h118a74 74 0 0 1 0 148h-54"/>
+  </g>
+  <rect x="188" y="244" width="58" height="92" fill="#4db588"/>
+</svg>
