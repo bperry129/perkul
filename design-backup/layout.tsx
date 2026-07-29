@@ -1,35 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import { Baloo_2, Nunito, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND } from '@/lib/brand';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
-
-/**
- * Type system.
- *  - Baloo 2: the display face. Warm, rounded and confident — wordmark,
- *    headlines, the game words and the big score.
- *  - Nunito: the working sans for UI copy, labels and body text.
- *  - Spline Sans Mono: timers and tabular figures (stable digit widths).
- */
-const display = Baloo_2({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-});
-
-const sans = Nunito({
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
-  variable: '--font-sans',
-  display: 'swap',
-});
-
-const mono = Spline_Sans_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -52,12 +25,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#4db588',
+  themeColor: '#f6f3ec',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+    <html lang="en">
       <body>
         <SiteHeader />
         <main>{children}</main>

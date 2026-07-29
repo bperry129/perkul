@@ -374,7 +374,8 @@ export function GameClient({
       </h1>
       <p className="standfirst">
         Ten rounds. Five words each. Choose the fake word. You get a single choice per round and
-        you will not find out how you did until the tenth.
+        you will not find out how you did until the tenth. Get the most right in the fastest time
+        and see where you place on the leaderboard.
       </p>
 
       {error ? <div className="notice">{error}</div> : null}
@@ -393,7 +394,7 @@ export function GameClient({
         </Link>
       </div>
 
-      <p className="label" style={{ marginTop: '1.5rem' }}>
+      <p className="clocknote" style={{ marginTop: '1.5rem' }}>
         The clock starts when you press start.
       </p>
     </section>
