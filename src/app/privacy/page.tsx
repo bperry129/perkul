@@ -27,7 +27,7 @@ export default function PrivacyPage() {
         {BRAND.name} (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates the
         website at perkul.com. We are the data controller for information collected through the
         Service. For any privacy-related questions, contact us at{' '}
-        <a href="mailto:info@perkul.com">info@perkul.com</a>.
+        <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>.
       </p>
 
       <h2>2. Information We Collect</h2>
@@ -168,7 +168,7 @@ export default function PrivacyPage() {
       </ul>
       <p>
         To exercise any of these rights, email us at{' '}
-        <a href="mailto:info@perkul.com">info@perkul.com</a> with your request. We will respond within 30 days.
+        <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a> with your request. We will respond within 30 days.
         If you are located in the European Economic Area (EEA), you also have the right to lodge a
         complaint with your local data protection authority.
       </p>
@@ -184,7 +184,7 @@ export default function PrivacyPage() {
       </p>
       <p>
         To submit a verifiable consumer request, email{' '}
-        <a href="mailto:info@perkul.com">info@perkul.com</a>.
+        <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>.
       </p>
 
       <h2>10. Children&apos;s Privacy</h2>
@@ -193,7 +193,7 @@ export default function PrivacyPage() {
         personal information from children under 13. If we learn that we have inadvertently
         collected such information, we will delete it promptly. If you believe a child under 13 has
         provided us with personal information, contact us at{' '}
-        <a href="mailto:info@perkul.com">info@perkul.com</a>.
+        <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>.
       </p>
 
       <h2>11. Data Security</h2>
@@ -235,7 +235,7 @@ export default function PrivacyPage() {
       </p>
       <p>
         <strong>{BRAND.name}</strong><br />
-        <a href="mailto:info@perkul.com">info@perkul.com</a>
+        <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>
       </p>
     </div>
   );

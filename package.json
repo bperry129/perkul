@@ -14,6 +14,8 @@
     "seed:reset": "tsx scripts/seed.ts --reset",
     "admin:create": "tsx scripts/make-admin.ts",
     "content:check": "tsx scripts/validate-content.ts",
+    "badge:vendor": "node scripts/vendor-badge.mjs",
+
     "smoke": "tsx scripts/smoke.ts",
     "verify:score": "tsx scripts/verify-score.ts"
   },

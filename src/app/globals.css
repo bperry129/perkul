@@ -379,13 +379,15 @@ code {
   text-align: center;
 }
 
+/* Transparent SVG (see scripts/vendor-badge.mjs), so no corner rounding or
+   panel of its own — the ribbon outline is the whole shape. */
 .asseenon img {
   max-width: 100%;
   width: 100%;
   height: auto;
   display: inline-block;
-  border-radius: 14px;
 }
+
 
 /* Nothing but the ten words while the clock is running (flag set by GameClient). */
 body[data-playing] .asseenon { display: none; }

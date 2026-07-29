@@ -85,7 +85,8 @@ npm run content:check
 
 ```bash
 npm run dev     # http://localhost:3000
-npm test        # 99 tests
+npm test        # 103 tests
+
 
 npm run typecheck
 npm run build
@@ -361,12 +362,30 @@ after the `.shell--narrow` card, not by `GameClient` (which lives inside it).
 It stays off the screen during a timed round. The server skips it outright when
 it already knows a round is in progress; for the case where the player presses
 start without a page load, `GameClient` sets `body[data-playing]` and one CSS
-rule pulls the badge. It renders the image alone: the supplied embed code wrapped it in a
+rule pulls the badge.
 
-UTM-tracked link back to the badge generator, and an outbound advert does not
-belong on the front page of the game. A plain `<img>` rather than `next/image`,
-since a third party renders the badge on demand and there is nothing to
-optimise.
+It renders the image alone, with no link: the supplied embed code wrapped it in
+a UTM-tracked link back to the badge generator, and an outbound advert does not
+belong on the front page of the game.
+
+The file is **served from `public/as-seen-on.svg`, not hot-linked**, because it
+has to be transparent to sit on the green and the generator ignores its own
+`bg` parameter — every value returns byte-identical markup with a white slab
+baked in, so owning the file is the only way to delete it. (It also 403s
+anything that does not look like a browser, so it was never a dependency worth
+having on the homepage's critical path.) `npm run badge:vendor` re-fetches it and
+strips the background; the five logos are already RGBA PNGs, so only one
+low-contrast grey needed lifting for the green. A plain `<img>` rather than
+`next/image`: it is a local SVG and there is nothing to optimise.
+
+### 9.2 Contact address
+
+One address, `BRAND.email` (**info@contact.perkul.com**), rendered in the footer
+and in both legal pages. Terms and Privacy each promise a reply there, which is
+exactly the kind of fact that rots when it is copied — so `tests/contact.test.ts`
+fails the moment a literal address is pasted into any page or component, with
+form placeholders and CLI examples (`you@example.com`) explicitly allowed.
+
 
 ---
 

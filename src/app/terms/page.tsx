@@ -50,7 +50,7 @@ export default function TermsPage() {
         accurate information and to keep it up to date. You are responsible for maintaining the
         confidentiality of your account credentials and for all activity under your account. Notify
         us immediately at{' '}
-        <a href="mailto:info@perkul.com">info@perkul.com</a> if you suspect unauthorized access.
+        <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a> if you suspect unauthorized access.
       </p>
       <p>
         We reserve the right to suspend or terminate accounts that violate these Terms, contain
@@ -147,7 +147,7 @@ export default function TermsPage() {
         These Terms shall be governed by and construed in accordance with the laws of the State of
         Delaware, United States, without regard to its conflict-of-law provisions. Any dispute
         arising from these Terms or your use of the Service shall first be addressed by contacting
-        us at <a href="mailto:info@perkul.com">info@perkul.com</a>. If we cannot resolve the
+        us at <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>. If we cannot resolve the
         dispute informally, it shall be resolved by binding arbitration under the rules of the
         American Arbitration Association, except that either party may seek injunctive or other
         equitable relief in a court of competent jurisdiction.
@@ -164,7 +164,7 @@ export default function TermsPage() {
       <h2>15. Contact</h2>
       <p>
         Questions about these Terms? Email us at{' '}
-        <a href="mailto:info@perkul.com">info@perkul.com</a>.
+        <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>.
       </p>
     </div>
   );

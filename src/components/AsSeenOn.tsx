@@ -1,35 +1,37 @@
 /**
  * "As seen on" press badge. It sits *outside* the white card, on the green,
  * directly beneath it — press credentials belong next to the product, not inside
- * the game surface, and on the green it reads as a band rather than another
- * block of page content.
+ * the game surface. Rendered by `src/app/page.tsx` after the `.shell--narrow`
+ * card, and hidden while the clock is running (`body[data-playing]`).
  *
- * Rendered by the homepage, so it must be placed after the `.shell--narrow`
- * card rather than inside a component that lives within it. It hides itself
- * while the clock is running (`body[data-playing]`, set by GameClient).
+ * The file is served from `public/as-seen-on.svg`, not hot-linked from the badge
+ * generator. Two reasons, one of them forced:
  *
-
+ *  - It has to be transparent so the green shows through, and the generator
+ *    ignores its own `bg` parameter — every value returns byte-identical markup
+ *    with a white slab baked in. Owning the file is the only way to delete it.
+ *  - The generator also 403s anything that does not look like a browser, so it
+ *    was never a dependency worth having on the homepage's critical path.
+ *
+ * Re-fetch it with `npm run badge:vendor` (see scripts/vendor-badge.mjs).
+ *
  * Deliberately NOT wrapped in a link. The supplied embed code pointed at the
  * badge generator's marketing site with UTM tracking attached; an outbound
- * advert has no business on the front page of the game, so only the image is
- * kept. Nothing here is clickable and there is no watermark.
+ * advert has no business on the front page of the game. Nothing here is
+ * clickable and there is no watermark.
  *
- * A plain <img> rather than next/image: the badge is rendered on demand by a
- * third party, so there is nothing for the optimiser to do and no remote host
- * to whitelist in next.config.js.
+ * A plain <img> rather than next/image: it is a local SVG, so there is nothing
+ * for the optimiser to do.
  */
-const BADGE_SRC =
-  'https://prnow.io/api/badge?template=ribbon&logos=ap%2Cusatoday%2Cabc%2Cnbc%2Cfox' +
-  '&ratio=compact&font=sans&header=AS+SEEN+ON&bg=%23ffffff&fg=%23111827' +
-  '&accent=%231f2937&border=%231f2937&totalSites=100';
-
 export function AsSeenOn() {
   return (
     <div className="asseenon">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={BADGE_SRC}
+        src="/as-seen-on.svg"
         alt="As seen on AP, USA Today, ABC, NBC and Fox"
+        width={1100}
+        height={200}
         loading="lazy"
         decoding="async"
       />

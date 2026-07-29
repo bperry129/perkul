@@ -6,6 +6,13 @@
 export const BRAND = {
   name: process.env.NEXT_PUBLIC_BRAND_NAME || 'Perkul',
   domain: 'perkul.com',
+  /**
+   * The one contact address. Terms, Privacy and the footer all read it from
+   * here: a legal page promising to answer an address nobody reads is worse
+   * than having no address, and three hard-coded copies is how that happens.
+   */
+  email: 'info@contact.perkul.com',
+
   internalCodename: 'FALSE',
   tagline: 'One of these words isn’t real.',
   subline: '10 rounds. 5 words each. Choose the fake word.',
