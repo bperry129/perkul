@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BRAND, gameLabel } from '@/lib/brand';
+import { FindMeButton } from '@/components/FindMeButton';
 import { isSupabaseConfigured } from '@/lib/supabase/admin';
+
 import { getTodaysGame } from '@/lib/games';
 import { getLeaderboardPage } from '@/lib/leaderboard';
 import { findAttemptForIdentity } from '@/lib/attempts';
@@ -113,6 +115,11 @@ export default async function LeaderboardPage() {
 
   const showNeighbours = board.neighbours.length > 0;
 
+  // Only offer "Find me" when the player actually has a row to jump to.
+  const youOnBoard =
+    board.rows.some((row) => row.isYou) || board.neighbours.some((row) => row.isYou);
+
+
   return (
     <div className="shell shell--narrow">
       <div className="dateline">
@@ -131,11 +138,15 @@ export default async function LeaderboardPage() {
         accuracy carries the day — but a game left open long enough will lose to a faster one.
       </p>
 
-      <p className="label" style={{ marginTop: '1rem' }}>
-        {board.total === 0
-          ? 'No completed games yet today. Be first.'
-          : `${board.total.toLocaleString()} ${board.total === 1 ? 'player' : 'players'} today`}
-      </p>
+      <div className="board__bar">
+        <p className="label" style={{ margin: 0 }}>
+          {board.total === 0
+            ? 'No completed games yet today. Be first.'
+            : `${board.total.toLocaleString()} ${board.total === 1 ? 'player' : 'players'} today`}
+        </p>
+        {youOnBoard ? <FindMeButton label="Find me" /> : null}
+      </div>
+
 
       {board.total > 0 ? (
         <table className="board">

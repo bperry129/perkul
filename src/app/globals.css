@@ -360,6 +360,30 @@ code {
 }
 .action--quiet:hover { color: var(--brand-deep); background: none; }
 
+/* A pill for secondary, in-page actions like "Find me" — small enough to sit
+   on the same line as a label without competing with the primary button. */
+.action--small {
+  padding: 0.42rem 1.05rem;
+  font-size: 0.84rem;
+}
+
+/* -- "as seen on" press badge ---------------------------------------------- */
+
+.asseenon {
+  margin: 2.4rem 0 0;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+}
+
+.asseenon img {
+  max-width: 1100px;
+  width: 100%;
+  height: auto;
+  display: inline-block;
+}
+
+
 /* ------------------------------------------------------------------- game -- */
 
 .game-head {
@@ -970,6 +994,33 @@ details.expand > summary:hover { color: var(--brand-deep); }
   border-radius: 10px 0 0 10px;
 }
 .board tr[data-you='true'] td:last-child { border-radius: 0 10px 10px 0; }
+
+/* "Find me" landed here. One flash, then the highlight settles back to the
+   normal "you" tint — enough to catch the eye without becoming decoration.
+   The global prefers-reduced-motion rule disables the animation. */
+.board tr[data-flash='true'] td {
+  animation: you-flash 1.4s ease-out 1;
+}
+.board tr[data-you='true']:focus { outline: none; }
+.board tr[data-you='true']:focus-visible td {
+  box-shadow: inset 0 0 0 2px var(--brand-dark);
+}
+
+@keyframes you-flash {
+  0%, 55% { background: var(--brand); color: #fff; }
+  100% { background: var(--brand-tint); }
+}
+
+/* Row above a board: the count on the left, "Find me" on the right. */
+.board__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
 .board__name {
   font-family: var(--serif);
   font-size: 1.06rem;

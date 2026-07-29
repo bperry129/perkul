@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BRAND } from '@/lib/brand';
+import { FindMeButton } from '@/components/FindMeButton';
 import { isSupabaseConfigured } from '@/lib/supabase/admin';
+
 import {
   getAllTimeLeaderboard,
   MIN_GAMES_FOR_AVERAGE,
@@ -172,6 +174,12 @@ export default async function AllTimeLeaderboardPage({
     board.yourGamesPlayed > 0 &&
     board.yourGamesPlayed < MIN_GAMES_FOR_AVERAGE;
 
+  // Only offer "Find me" when the player actually has a row to jump to. On this
+  // board that is either a qualifying row in the top 250 or the appended
+  // "your position" row below the gap.
+  const youOnBoard = Boolean(board.you) || board.rows.some((row) => row.isYou);
+
+
   return (
     <div className="shell shell--narrow">
       <div className="dateline">
@@ -209,15 +217,19 @@ export default async function AllTimeLeaderboardPage({
         </div>
       ) : null}
 
-      <p className="label" style={{ marginTop: '1rem' }}>
-        {board.totalPlayers === 0
-          ? tab === 'smartest'
-            ? `No one has completed ${MIN_GAMES_FOR_AVERAGE} games yet. Be first.`
-            : 'No completed games yet. Be first.'
-          : `${board.totalPlayers.toLocaleString()} ${
-              board.totalPlayers === 1 ? 'player qualifies' : 'players qualify'
-            }`}
-      </p>
+      <div className="board__bar">
+        <p className="label" style={{ margin: 0 }}>
+          {board.totalPlayers === 0
+            ? tab === 'smartest'
+              ? `No one has completed ${MIN_GAMES_FOR_AVERAGE} games yet. Be first.`
+              : 'No completed games yet. Be first.'
+            : `${board.totalPlayers.toLocaleString()} ${
+                board.totalPlayers === 1 ? 'player qualifies' : 'players qualify'
+              }`}
+        </p>
+        {youOnBoard ? <FindMeButton label="Find me" /> : null}
+      </div>
+
 
       {board.totalPlayers > 0 ? (
         <table className="board">

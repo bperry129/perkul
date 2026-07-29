@@ -250,9 +250,23 @@ been applied yet. At one game a day this is a single indexed read; if daily
 volume grows enough to notice, move it to a materialised view keyed on
 `(player, game)`.
 
+### 6.2 Finding yourself on a board
+
+Every board renders every player on one scrollable page, so on a busy day your
+own row can be a long way down. A **Find me** button sits above each table and
+scrolls straight to it, flashing the row once.
+
+`src/components/FindMeButton.tsx` targets `[data-you="true"]` — the same
+attribute the highlight styling uses, so there is one definition of "this row is
+you" rather than a parallel set of ids. It also moves keyboard and screen-reader
+focus, not just the viewport. The server decides whether to render it at all
+(`youOnBoard`), so it is never a button that does nothing.
+
 ---
 
 ## 7. Comparisons: real vs benchmark
+
+
 
 Admin → Comparisons controls the mode:
 
@@ -310,12 +324,24 @@ src/lib/                 brand, time, games, attempts, scoring, benchmark,
 src/lib/public-payload   the only thing the browser is allowed to see
 src/content/             the authored 20-day bank + dev fixture (TOVEN/BRUME)
 src/app/                 public pages, /admin, /api route handlers
-src/components/          GameClient, ResultsView, Countdown, forms
+src/components/          GameClient, ResultsView, Countdown, FindMeButton,
+                         AsSeenOn, forms
 scripts/                 seed, make-admin, validate-content, smoke, verify-score
 tests/                   time, scoring, all-time, gameplay, content
 ```
 
+### 9.1 Homepage press badge
+
+`AsSeenOn` renders the "as seen on" badge under the hero, on the **intro screen
+only** — never during a timed round or on the results, where it would be
+clutter. It renders the image alone: the supplied embed code wrapped it in a
+UTM-tracked link back to the badge generator, and an outbound advert does not
+belong on the front page of the game. A plain `<img>` rather than `next/image`,
+since a third party renders the badge on demand and there is nothing to
+optimise.
+
 ---
+
 
 ## 10. Tests
 
