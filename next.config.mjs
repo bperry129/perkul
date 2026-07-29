@@ -15,6 +15,12 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          // Two years, include subdomains. Vercel adds this automatically for
+          // custom domains, but being explicit means local / preview deployments
+          // also declare the intent.
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          // Belt-and-suspenders for older browsers that don't support a full CSP.
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
         ],
       },
       {
