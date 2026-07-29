@@ -48,6 +48,11 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   // Deliberately no puzzle content in metadata: share previews must not spoil.
+  // AdSense ownership meta tag — statically present in HTML so the AdSense
+  // crawler can verify the publisher without executing JavaScript.
+  other: {
+    'google-adsense-account': 'ca-pub-3524846850046440',
+  },
 };
 
 export const viewport: Viewport = {
