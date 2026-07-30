@@ -217,13 +217,14 @@ function ChallengeBlock({ result }: { result: AttemptResult }) {
             flex: 1,
             minWidth: 0,
             background: 'var(--bg)',
-            color: 'var(--ink)',
+            color: '#fff',
             border: '1px solid var(--rule)',
             borderRadius: '8px',
             padding: '0.6rem 0.8rem',
             fontSize: '0.85rem',
             fontFamily: 'inherit',
           }}
+
         />
         <button
           type="button"
