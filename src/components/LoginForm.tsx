@@ -76,9 +76,23 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
         },
       });
 
+      // Every signup goes into the Resend "All Contacts" audience, regardless
+      // of what happens next below — Supabase Auth only uses Resend as an
+      // SMTP relay for the confirmation email, so without this call the
+      // address would show up in Resend's Emails tab but never as a contact.
+      // Fire-and-forget: a Resend hiccup must never block account creation.
+      if (data?.user) {
+        fetch('/api/contacts/add', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), displayName: displayName.trim() || undefined }),
+        }).catch(() => {});
+      }
+
       // If the user record was created (data.user exists) but email sending
       // failed (SMTP error), still show the confirmation screen. The user
       // exists; they can ask to resend from Supabase or wait for SMTP fix.
+
       if (data?.user && !data?.session) {
         setStatus('check-email');
         return;
