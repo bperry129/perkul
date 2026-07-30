@@ -154,24 +154,16 @@ function RoundEntry({ round }: { round: RoundResult }) {
 /* --------------------------------------------------------------- challenge -- */
 
 function ChallengeBlock({ result }: { result: AttemptResult }) {
-  const [state, setState] = useState<'idle' | 'copied'>('idle');
+  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const challengeUrl = `https://perkul.com/?c=${result.attemptId}`;
 
   const copy = async () => {
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Can you beat my Perkul score?',
-          text: `I scored ${result.score.toLocaleString()} on today's Perkul — ${result.correctCount}/${result.roundsTotal} correct. Think you can beat me?`,
-          url: challengeUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(challengeUrl);
-        setState('copied');
-        window.setTimeout(() => setState('idle'), 2400);
-      }
+      await navigator.clipboard.writeText(challengeUrl);
+      setState('copied');
+      window.setTimeout(() => setState('idle'), 2400);
     } catch {
-      // fallback: show link inline
+      setState('failed');
     }
   };
 
@@ -202,17 +194,55 @@ function ChallengeBlock({ result }: { result: AttemptResult }) {
       <p style={{ color: 'var(--gray-light)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
         Send them a link — they&apos;ll see your score and have to beat it to top the board.
       </p>
-      <button
-        type="button"
-        className="action"
-        onClick={copy}
-        style={{ fontSize: '0.9rem' }}
+      {/*
+        A plain readonly input + a copy button, not navigator.share. Sharing
+        pops up the OS/browser share sheet even on desktops that implement the
+        Web Share API (some Windows/Edge configs do), which is a confusing
+        extra step for a "copy this link" action. Tapping/clicking the input
+        selects the text as a fallback if clipboard access is ever blocked.
+      */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.5rem',
+          alignItems: 'stretch',
+        }}
       >
-        {state === 'copied' ? '✓ Link copied!' : '🏆 Copy challenge link'}
-      </button>
+        <input
+          readOnly
+          value={challengeUrl}
+          onFocus={(e) => e.currentTarget.select()}
+          onClick={(e) => e.currentTarget.select()}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: 'var(--bg)',
+            color: 'var(--ink)',
+            border: '1px solid var(--rule)',
+            borderRadius: '8px',
+            padding: '0.6rem 0.8rem',
+            fontSize: '0.85rem',
+            fontFamily: 'inherit',
+          }}
+        />
+        <button
+          type="button"
+          className="action"
+          onClick={copy}
+          style={{ fontSize: '0.9rem', whiteSpace: 'nowrap', flexShrink: 0 }}
+        >
+          {state === 'copied' ? '✓ Copied' : 'Copy link'}
+        </button>
+      </div>
+      {state === 'failed' ? (
+        <p className="label" style={{ marginTop: '0.5rem' }}>
+          Copying is blocked in this browser - tap the link above and copy it manually.
+        </p>
+      ) : null}
     </div>
   );
 }
+
 
 /* ---------------------------------------------------------------- sharing -- */
 
