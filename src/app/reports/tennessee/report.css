@@ -1,0 +1,1200 @@
+/* ===========================================================================
+   THE TENNESSEE PERKUL REPORT — scoped editorial theme
+   ---------------------------------------------------------------------------
+   This page deliberately lives outside the main Perkul design system. It is a
+   data-journalism feature: warm paper, deep navy ink, four score-band colours.
+
+   EVERY rule is scoped under `.tnr`, so nothing here can leak into the game UI.
+   The global `a`, `h1..h4` and `button` rules from globals.css are explicitly
+   reset inside the wrapper.
+
+   Motion uses `animation-timeline: view()` behind an @supports guard, so
+   browsers without scroll-driven animation render the content visible and
+   static. No JavaScript is required anywhere on this page.
+   =========================================================================== */
+
+.tnr {
+  /* -- palette ------------------------------------------------------------ */
+  --tnr-paper: #f7f4ee;
+  --tnr-paper-2: #efeae1;
+  --tnr-card: #ffffff;
+  --tnr-ink: #17212e;
+  --tnr-ink-2: #45535f;
+  --tnr-ink-3: #7d8891;
+  --tnr-rule: #ded7ca;
+  --tnr-rule-2: #ece6db;
+
+  --tnr-clay: #c2622f;
+  --tnr-clay-soft: #f4e5d8;
+  --tnr-gold: #cf9a2f;
+  --tnr-navy-deep: #101a25;
+
+  /* score bands */
+  --tnr-elite: #2f6f5c;
+  --tnr-elite-soft: #e0ede8;
+  --tnr-strong: #4f9a7f;
+  --tnr-strong-soft: #e7f1ec;
+  --tnr-mid: #c99328;
+  --tnr-mid-soft: #f7eed8;
+  --tnr-low: #b4603f;
+  --tnr-low-soft: #f7e5dd;
+
+  /* -- type -------------------------------------------------------------- */
+  --tnr-serif: var(--tnr-font-serif), 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --tnr-sans: var(--tnr-font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+
+  /* -- shape ------------------------------------------------------------- */
+  --tnr-r: 16px;
+  --tnr-r-lg: 24px;
+  --tnr-shadow: 0 1px 2px rgba(23, 33, 46, 0.05), 0 12px 34px rgba(23, 33, 46, 0.07);
+  --tnr-shadow-lift: 0 2px 4px rgba(23, 33, 46, 0.06), 0 22px 48px rgba(23, 33, 46, 0.12);
+
+  position: relative;
+  background: var(--tnr-paper);
+  color: var(--tnr-ink);
+  font-family: var(--tnr-sans);
+  font-size: 17px;
+  line-height: 1.65;
+  overflow-x: clip;
+}
+
+/* Paper grain: a whisper of texture so the background is not dead flat. */
+.tnr::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(rgba(23, 33, 46, 0.045) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* -- global resets, scoped ------------------------------------------------ */
+.tnr h1,
+.tnr h2,
+.tnr h3 {
+  font-family: var(--tnr-serif);
+  color: var(--tnr-ink);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  margin: 0;
+  font-weight: 600;
+}
+
+.tnr p {
+  margin: 0 0 1rem;
+  color: var(--tnr-ink-2);
+}
+
+.tnr p:last-child {
+  margin-bottom: 0;
+}
+
+.tnr a {
+  color: var(--tnr-clay);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1.5px solid rgba(194, 98, 47, 0.35);
+}
+
+.tnr ul,
+.tnr ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* -- layout primitives --------------------------------------------------- */
+.tnr-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.tnr-wrap--tight {
+  max-width: 52rem;
+}
+
+
+.tnr-section {
+  position: relative;
+  padding: 5rem 0;
+  border-top: 1px solid var(--tnr-rule);
+}
+
+.tnr-section--band {
+  background: var(--tnr-paper-2);
+}
+
+.tnr-section--ink {
+  background: var(--tnr-navy-deep);
+  border-top-color: var(--tnr-navy-deep);
+}
+
+.tnr-section--ink h2,
+.tnr-section--ink h3 {
+  color: #fdfbf7;
+}
+
+.tnr-section--ink p {
+  color: rgba(253, 251, 247, 0.72);
+}
+
+.tnr-head {
+  max-width: 46rem;
+  margin-bottom: 2.75rem;
+}
+
+.tnr-head--center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.tnr-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tnr-clay);
+  margin-bottom: 0.9rem;
+}
+
+.tnr-kicker::before {
+  content: '';
+  width: 26px;
+  height: 2px;
+  background: currentColor;
+}
+
+.tnr-section--ink .tnr-kicker {
+  color: var(--tnr-gold);
+}
+
+.tnr-h2 {
+  font-size: clamp(2rem, 4.4vw, 3rem);
+}
+
+.tnr-h3 {
+  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+}
+
+.tnr-lede {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-top: 1rem;
+  color: var(--tnr-ink-2);
+}
+
+.tnr-note {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--tnr-ink-3);
+  font-style: italic;
+}
+
+.tnr-axisnote {
+  margin-top: 1.4rem;
+  font-size: 0.78rem;
+  color: var(--tnr-ink-3);
+}
+
+.tnr-section--ink .tnr-axisnote {
+  color: rgba(253, 251, 247, 0.45);
+}
+
+/* =========================================================================
+   1 — HERO
+   ========================================================================= */
+.tnr-hero {
+  position: relative;
+  padding: 4.5rem 0 4rem;
+  background:
+    radial-gradient(120% 90% at 10% 0%, #fffdf9 0%, rgba(255, 253, 249, 0) 62%),
+    var(--tnr-paper);
+  overflow: hidden;
+}
+
+.tnr-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.9rem 0.4rem 0.5rem;
+  background: var(--tnr-card);
+  border: 1px solid var(--tnr-rule);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-2);
+  box-shadow: var(--tnr-shadow);
+  margin-bottom: 1.5rem;
+}
+
+.tnr-hero__badge b {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--tnr-clay);
+  color: #fff;
+  font-size: 0.7rem;
+  letter-spacing: 0;
+}
+
+.tnr-hero__title {
+  font-size: clamp(2.6rem, 6.6vw, 5rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  max-width: 30em;
+}
+
+.tnr-hero__title em {
+  font-style: italic;
+  color: var(--tnr-clay);
+}
+
+.tnr-hero__sub {
+  margin-top: 1.4rem;
+  max-width: 34rem;
+  font-family: var(--tnr-serif);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.45;
+  color: var(--tnr-ink);
+  font-weight: 500;
+}
+
+.tnr-hero__note {
+  margin-top: 1.75rem;
+  max-width: 40rem;
+}
+
+/* The case-study framing: why one state, and what we compared it to. */
+.tnr-hero__intro {
+  margin-top: 1.75rem;
+  max-width: 42rem;
+  padding-left: 1.25rem;
+  border-left: 3px solid var(--tnr-clay-soft);
+}
+
+.tnr-hero__intro p {
+  font-size: 1.02rem;
+  line-height: 1.62;
+}
+
+/* -- the stat strip ------------------------------------------------------ */
+.tnr-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 2.5rem;
+  background: var(--tnr-card);
+  border: 1px solid var(--tnr-rule);
+  border-radius: var(--tnr-r-lg);
+  box-shadow: var(--tnr-shadow);
+  overflow: hidden;
+}
+
+.tnr-strip__item {
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+
+.tnr-strip__item + .tnr-strip__item {
+  border-left: 1px solid var(--tnr-rule-2);
+}
+
+.tnr-strip__num {
+  display: block;
+  font-family: var(--tnr-serif);
+  font-size: clamp(1.5rem, 3.2vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-strip__label {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-3);
+}
+
+/* =========================================================================
+   2 — PODIUM
+   ========================================================================= */
+.tnr-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: end;
+}
+
+.tnr-pod {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem 1.75rem;
+  background: var(--tnr-card);
+  border: 1px solid var(--tnr-rule);
+  border-radius: var(--tnr-r-lg);
+  box-shadow: var(--tnr-shadow);
+}
+
+/* First place sits taller and wears the clay accent. */
+.tnr-pod[data-place='1'] {
+  padding-top: 3.25rem;
+  padding-bottom: 2.25rem;
+  border-color: var(--tnr-clay);
+  box-shadow: var(--tnr-shadow-lift);
+}
+
+.tnr-pod__medal {
+  position: absolute;
+  top: -1.1rem;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: #9aa3a9;
+  color: #fff;
+  font-family: var(--tnr-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(23, 33, 46, 0.2);
+}
+
+.tnr-pod[data-place='1'] .tnr-pod__medal {
+  background: var(--tnr-clay);
+  width: 2.8rem;
+  height: 2.8rem;
+  font-size: 1.3rem;
+  top: -1.35rem;
+}
+
+.tnr-pod[data-place='3'] .tnr-pod__medal {
+  background: #c0a172;
+}
+
+.tnr-pod__city {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+}
+
+.tnr-pod[data-place='1'] .tnr-pod__city {
+  font-size: clamp(1.7rem, 3.6vw, 2.3rem);
+}
+
+.tnr-pod__score {
+  margin-top: 0.75rem;
+  font-family: var(--tnr-serif);
+  font-size: clamp(2.2rem, 5vw, 3.1rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--tnr-elite);
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-pod__label {
+  margin-top: 0.4rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-3);
+}
+
+.tnr-pod__players {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--tnr-rule-2);
+  width: 100%;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tnr-ink-2);
+}
+
+/* -- the mirrored "dullest" podium -------------------------------------- */
+.tnr-pod[data-tone='low'] .tnr-pod__score {
+  color: var(--tnr-low);
+}
+
+.tnr-pod[data-tone='low'][data-place='1'] {
+  border-color: var(--tnr-low);
+}
+
+.tnr-pod[data-tone='low'] .tnr-pod__medal {
+  background: #a8a29b;
+  font-size: 0.95rem;
+}
+
+.tnr-pod[data-tone='low'][data-place='1'] .tnr-pod__medal {
+  background: var(--tnr-low);
+  font-size: 1.05rem;
+}
+
+.tnr-pod[data-tone='low'][data-place='3'] .tnr-pod__medal {
+  background: #b9b2a8;
+}
+
+/* =========================================================================
+   3 — THE FULL BOARD
+   ========================================================================= */
+.tnr-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tnr-ink-3);
+}
+
+.tnr-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.tnr-legend i {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  background: var(--tnr-ink-3);
+}
+
+.tnr-legend i[data-band='elite'] {
+  background: var(--tnr-elite);
+}
+.tnr-legend i[data-band='strong'] {
+  background: var(--tnr-strong);
+}
+.tnr-legend i[data-band='mid'] {
+  background: var(--tnr-mid);
+}
+.tnr-legend i[data-band='low'] {
+  background: var(--tnr-low);
+}
+
+/* -- featured rows (ranks 4–25) ------------------------------------------ */
+/* NOTE: the selector is `.tnr ol.tnr-board`, not `.tnr-board`. The scoped
+   reset above (`.tnr ul, .tnr ol { padding: 0 }`) has higher specificity than
+   a lone class, so a bare `.tnr-board` rule cannot set horizontal padding on
+   this <ol> — the reset silently wins and the numbers sit on the border. */
+.tnr ol.tnr-board {
+  background: var(--tnr-card);
+  border: 1px solid var(--tnr-rule);
+  border-radius: var(--tnr-r-lg);
+  padding: 0.75rem 2.25rem;
+  box-shadow: var(--tnr-shadow);
+}
+
+.tnr-row {
+  display: grid;
+  grid-template-columns: 2.4rem 11rem 3.6rem minmax(0, 1fr) 4.6rem;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0.75rem 0;
+}
+
+.tnr-row + .tnr-row {
+  border-top: 1px solid var(--tnr-rule-2);
+}
+
+.tnr-row__rank {
+  font-family: var(--tnr-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--tnr-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-row__city {
+  font-family: var(--tnr-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Player-count pill — the sample size is always visible, never hidden. */
+.tnr-row__players {
+  justify-self: start;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--tnr-paper-2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tnr-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-row__track {
+  position: relative;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--tnr-rule-2);
+  overflow: hidden;
+}
+
+.tnr-row__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 5px;
+  background: var(--tnr-ink-3);
+  animation: tnr-grow 800ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
+}
+
+.tnr-row__fill[data-band='elite'] {
+  background: var(--tnr-elite);
+}
+.tnr-row__fill[data-band='strong'] {
+  background: var(--tnr-strong);
+}
+.tnr-row__fill[data-band='mid'] {
+  background: var(--tnr-mid);
+}
+.tnr-row__fill[data-band='low'] {
+  background: var(--tnr-low);
+}
+
+.tnr-row__score {
+  font-family: var(--tnr-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@keyframes tnr-grow {
+  from {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+/* -- the dense remainder grid (ranks 26+) -------------------------------- */
+.tnr-subhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 3rem 0 1.25rem;
+}
+
+.tnr-subhead__note {
+  font-family: var(--tnr-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-3);
+}
+
+.tnr-grid-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.tnr-cell {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--tnr-card);
+  border: 1px solid var(--tnr-rule-2);
+  border-left: 4px solid var(--tnr-ink-3);
+  border-radius: 10px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.tnr-cell:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tnr-shadow);
+}
+
+.tnr-cell[data-band='elite'] {
+  border-left-color: var(--tnr-elite);
+  background: var(--tnr-elite-soft);
+}
+.tnr-cell[data-band='strong'] {
+  border-left-color: var(--tnr-strong);
+  background: var(--tnr-strong-soft);
+}
+.tnr-cell[data-band='mid'] {
+  border-left-color: var(--tnr-mid);
+  background: var(--tnr-mid-soft);
+}
+.tnr-cell[data-band='low'] {
+  border-left-color: var(--tnr-low);
+  background: var(--tnr-low-soft);
+}
+
+.tnr-cell__rank {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tnr-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-cell__city {
+  font-family: var(--tnr-serif);
+  font-size: 0.98rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tnr-cell__players {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--tnr-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-cell__score {
+  font-family: var(--tnr-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   4 — TURNOUT BARS (on ink)
+   ========================================================================= */
+.tnr-bars {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.tnr-bar {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) 4.4rem;
+  align-items: center;
+  gap: 1.15rem;
+  padding: 0.55rem 0;
+}
+
+.tnr-bar + .tnr-bar {
+  border-top: 1px solid rgba(253, 251, 247, 0.1);
+}
+
+.tnr-bar__city {
+  font-family: var(--tnr-serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #fdfbf7;
+}
+
+.tnr-bar__track {
+  position: relative;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(253, 251, 247, 0.07);
+  overflow: hidden;
+}
+
+.tnr-bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #2f6f5c, #4f9a7f);
+  animation: tnr-grow 900ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
+}
+
+.tnr-bar__inside {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fdfbf7;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.tnr-bar__val {
+  font-family: var(--tnr-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--tnr-gold);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   5 — THE CURIOSITY
+   ========================================================================= */
+.tnr-curio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.tnr-curio__side {
+  padding: 1.75rem 1.5rem;
+  border-radius: var(--tnr-r-lg);
+  background: var(--tnr-elite-soft);
+  border: 1px solid rgba(47, 111, 92, 0.28);
+  text-align: center;
+}
+
+.tnr-curio__side[data-tone='low'] {
+  background: var(--tnr-low-soft);
+  border-color: rgba(180, 96, 63, 0.28);
+}
+
+.tnr-curio__label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-2);
+}
+
+.tnr-curio__num {
+  display: block;
+  margin-top: 0.6rem;
+  font-family: var(--tnr-serif);
+  font-size: clamp(2.2rem, 5.5vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-curio__vs {
+  display: grid;
+  place-content: center;
+  gap: 0.2rem;
+  padding: 0 1rem;
+  text-align: center;
+}
+
+.tnr-curio__vs b {
+  font-family: var(--tnr-serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--tnr-clay);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.tnr-curio__vs i {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-3);
+}
+
+.tnr-curio__sub {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--tnr-ink-3);
+}
+
+/* Neutral side, used for the national benchmark rather than a score band. */
+.tnr-curio__side[data-tone='neutral'] {
+  background: #f1ece3;
+  border-color: var(--tnr-rule);
+}
+
+/* -- the worked income example (two cities, side by side) ---------------- */
+.tnr-example {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.tnr-example__card {
+  padding: 1.6rem 1.5rem;
+  background: var(--tnr-card);
+  border: 1px solid var(--tnr-rule);
+  border-top: 4px solid var(--tnr-low);
+  border-radius: var(--tnr-r-lg);
+  box-shadow: var(--tnr-shadow);
+}
+
+.tnr-example__card[data-tone='poor'] {
+  border-top-color: var(--tnr-elite);
+}
+
+.tnr-example__tag {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-3);
+}
+
+.tnr-example__city {
+  margin-top: 0.5rem;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+}
+
+.tnr-example__pair {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--tnr-rule-2);
+}
+
+.tnr-example__pair span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.tnr-example__pair b {
+  font-family: var(--tnr-serif);
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tnr-example__pair b[data-role='score'] {
+  color: var(--tnr-low);
+  font-size: 2rem;
+}
+
+.tnr-example__card[data-tone='poor'] .tnr-example__pair b[data-role='score'] {
+  color: var(--tnr-elite);
+}
+
+.tnr-example__pair i {
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--tnr-ink-3);
+  line-height: 1.35;
+}
+
+.tnr-example__note {
+  margin-top: 1.5rem;
+  padding: 1.1rem 1.35rem;
+  border-radius: var(--tnr-r);
+  background: var(--tnr-clay-soft);
+  border: 1px solid rgba(194, 98, 47, 0.25);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--tnr-ink);
+}
+
+/* =========================================================================
+   6 — LIMITS
+   ========================================================================= */
+.tnr-not {
+  padding: 2rem 2.25rem;
+  border-radius: var(--tnr-r-lg);
+  background: #f2eee6;
+  border: 1px solid var(--tnr-rule);
+}
+
+.tnr-not li {
+  position: relative;
+  padding: 0.8rem 0 0.8rem 2.3rem;
+  font-size: 1rem;
+  color: var(--tnr-ink-2);
+  line-height: 1.5;
+}
+
+.tnr-not li + li {
+  border-top: 1px solid var(--tnr-rule);
+}
+
+.tnr-not li::before {
+  content: '✕';
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #e3dbcf;
+  color: var(--tnr-ink-2);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.tnr-not li[data-tone='yes'] {
+  color: var(--tnr-ink);
+  font-weight: 600;
+}
+
+.tnr-not li[data-tone='yes']::before {
+  content: '✓';
+  background: var(--tnr-elite);
+  color: #fff;
+}
+
+.tnr-method {
+  margin-top: 1.5rem;
+  padding: 1.3rem 1.5rem;
+  border-radius: var(--tnr-r);
+  border: 1px dashed var(--tnr-rule);
+}
+
+.tnr-method h3 {
+  font-family: var(--tnr-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tnr-ink-3);
+  margin-bottom: 0.5rem;
+}
+
+.tnr-method p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--tnr-ink-3);
+}
+
+/* =========================================================================
+   7 — CTA
+   ========================================================================= */
+.tnr-cta {
+  position: relative;
+  padding: 5.5rem 0 6rem;
+  background: var(--tnr-navy-deep);
+  text-align: center;
+}
+
+.tnr-cta__title {
+  font-family: var(--tnr-serif);
+  font-size: clamp(2.2rem, 5.2vw, 3.8rem);
+  color: #fdfbf7;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0;
+  font-weight: 600;
+}
+
+.tnr-cta__title em {
+  font-style: italic;
+  color: var(--tnr-gold);
+}
+
+.tnr-cta__body {
+  max-width: 34rem;
+  margin: 1.4rem auto 0;
+}
+
+.tnr-cta__body p {
+  color: rgba(253, 251, 247, 0.75);
+}
+
+.tnr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 2.25rem;
+  padding: 1.05rem 2.4rem;
+  border-radius: 999px;
+  background: var(--tnr-clay);
+  color: #fff !important;
+  font-family: var(--tnr-sans);
+  font-size: 1.02rem;
+  font-weight: 800;
+  text-decoration: none;
+  border: none !important;
+  box-shadow: 0 4px 0 #97481f, 0 18px 34px rgba(0, 0, 0, 0.35);
+  transition: transform 130ms ease, box-shadow 130ms ease, background 130ms ease;
+}
+
+.tnr-btn:hover {
+  background: #d06d33;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #97481f, 0 22px 40px rgba(0, 0, 0, 0.4);
+}
+
+.tnr-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #97481f, 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.tnr-cta__kicker {
+  margin-top: 1.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: rgba(253, 251, 247, 0.45);
+}
+
+/* =========================================================================
+   SCROLL-DRIVEN REVEAL — progressive enhancement only
+   ========================================================================= */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .tnr-reveal {
+      animation: tnr-in linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 22%;
+    }
+  }
+}
+
+@keyframes tnr-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================================
+   RESPONSIVE
+   ========================================================================= */
+@media (max-width: 60rem) {
+  .tnr ol.tnr-board {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .tnr-row {
+    grid-template-columns: 2.2rem 9.5rem 3.4rem minmax(0, 1fr) 4.4rem;
+    gap: 0.9rem;
+  }
+
+  .tnr-curio {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tnr-curio__vs {
+    padding: 0.25rem 0;
+  }
+
+  .tnr-example {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The podium holds 3-up well down to tablet width; only stack on phones,
+   and float the winner to the top when it does. */
+@media (max-width: 46rem) {
+  .tnr-podium {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .tnr-pod[data-place='1'] {
+    order: -1;
+  }
+}
+
+@media (max-width: 44rem) {
+  .tnr {
+    font-size: 16px;
+  }
+
+  .tnr-wrap {
+    padding: 0 1.1rem;
+  }
+
+  .tnr-section {
+    padding: 3.5rem 0;
+  }
+
+  .tnr-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Keep exactly one divider per pair on the 2-up layout. */
+  .tnr-strip__item:nth-child(3) {
+    border-left: none;
+  }
+
+  .tnr-strip__item:nth-child(n + 3) {
+    border-top: 1px solid var(--tnr-rule-2);
+  }
+
+  .tnr ol.tnr-board {
+    padding: 0.5rem 1.1rem;
+  }
+
+  /* On phones the bar is dropped and the row becomes a compact 3-up. */
+  .tnr-row {
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    gap: 0.6rem 0.75rem;
+  }
+
+  .tnr-row__players {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .tnr-row__track {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    height: 10px;
+  }
+
+  .tnr-row__city {
+    font-size: 1.05rem;
+  }
+
+  .tnr-grid-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tnr-bar {
+    grid-template-columns: 6.5rem minmax(0, 1fr) 3.5rem;
+    gap: 0.7rem;
+  }
+
+  .tnr-bar__city {
+    font-size: 0.98rem;
+  }
+
+  .tnr-bar__inside {
+    font-size: 0.66rem;
+    left: 0.5rem;
+  }
+
+  .tnr-not {
+    padding: 1.35rem 1.5rem;
+  }
+}
+
+/* Users who prefer less motion get a completely static page. */
+@media (prefers-reduced-motion: reduce) {
+  .tnr-row__fill,
+  .tnr-bar__fill {
+    animation: none !important;
+  }
+}
