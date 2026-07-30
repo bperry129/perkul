@@ -16,17 +16,21 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
   const [status, setStatus] = useState<'idle' | 'busy' | 'check-email'>('idle');
   const [message, setMessage] = useState<string | null>(null);
 
+  // Becomes {{ .RedirectTo }} in the Supabase "Confirm signup" email
+  // template, which builds the emailed link to /auth/confirm?...&next=<this>.
+  // Deliberately the plain landing URL (not /auth/callback) — see
+  // src/app/auth/confirm/route.ts for why.
   const redirectTo = () => {
     const base =
       (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '') ||
       (typeof window !== 'undefined' ? window.location.origin : '');
-    const url = new URL('/auth/callback', base);
-    url.searchParams.set('next', next);
+    const url = new URL(next, base);
     if (claim) url.searchParams.set('claim', '1');
     return url.toString();
   };
 
   /** Produce a human-readable message from whatever Supabase throws */
+
   const extractMessage = (error: unknown, fallback: string): string => {
     if (!error) return fallback;
     // Log the full error in the browser console so we can diagnose issues.
