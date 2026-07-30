@@ -14,12 +14,14 @@ import {
   addDays,
   formatElapsed,
   formatGameDate,
+  formatSeconds,
   nyDateString,
   nyMidnightInstant,
 } from '@/lib/time';
+
 import { logEvent } from '@/lib/analytics';
 
-export const metadata: Metadata = {
+const DEFAULT_METADATA: Metadata = {
   title: 'Perkul — Free Daily Word Puzzle Game',
   description:
     'Play Perkul: the free daily word puzzle game where one word in every round is fake. Ten competitive rounds, a live leaderboard, and a new puzzle every day. Better than Wordle.',
@@ -29,6 +31,48 @@ export const metadata: Metadata = {
       'Five words per round. One is fake. Ten rounds, live leaderboard, new puzzle every day. Free to play.',
   },
 };
+
+/**
+ * Challenge links (/?c=<attemptId>) need their own share preview — otherwise
+ * every link unfurls as the generic homepage card and the person receiving it
+ * has no idea a score is waiting for them. The static /opengraph-image used
+ * everywhere else can't see the query string, so this builds a one-off
+ * openGraph/twitter image via /api/og with the score baked into the URL.
+ * Falls back to the default metadata for a plain visit or an unknown/expired
+ * challenge id.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: { c?: string };
+}): Promise<Metadata> {
+  const challengeId = searchParams?.c ?? null;
+  const challenge = challengeId ? await getChallengeInfo(challengeId).catch(() => null) : null;
+  if (!challenge) return DEFAULT_METADATA;
+
+  const title = `${challenge.displayName} scored ${formatPoints(challenge.score)} on Perkul`;
+  const description = `${challenge.correctCount}/10 correct in ${formatSeconds(challenge.elapsedMs)}s — think you can beat them? Play today's Perkul.`;
+  const ogImage = `/api/og?name=${encodeURIComponent(challenge.displayName)}&score=${challenge.score}&correct=${challenge.correctCount}&total=10&elapsed=${challenge.elapsedMs}`;
+
+  return {
+    ...DEFAULT_METADATA,
+    title,
+    description,
+    openGraph: {
+      ...DEFAULT_METADATA.openGraph,
+      title,
+      description,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage],
+    },
+  };
+}
+
 
 /** Structured data for Google — served with every page load. */
 const jsonLd = {
