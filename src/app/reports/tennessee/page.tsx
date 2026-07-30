@@ -33,7 +33,7 @@ const editorialSans = Inter({
 
 export const metadata: Metadata = {
   title: `The Tennessee ${BRAND.name} Report — All 148 Cities Ranked`,
-  description: `Every one of Tennessee's ${TN_TOTALS.cities} sampled cities, ranked by average ${BRAND.name} score, from ${TN_TOTALS.topScore.toLocaleString()} down to ${TN_TOTALS.lowScore.toLocaleString()} — based on ${TN_TOTALS.users.toLocaleString()} players and ${TN_TOTALS.tests.toLocaleString()} tests.`,
+  description: `Every one of Tennessee's ${TN_TOTALS.cities} sampled cities, ranked by average ${BRAND.name} score, from ${TN_TOTALS.topScore.toLocaleString()} down to ${TN_TOTALS.lowScore.toLocaleString()} — based on ${TN_TOTALS.users.toLocaleString()} players and ${TN_TOTALS.tests.toLocaleString()} tests, benchmarked against 2.5 million registered players.`,
   keywords: [
     'Tennessee word game',
     'Tennessee city rankings',
@@ -58,6 +58,15 @@ export const metadata: Metadata = {
 --------------------------------------------------------------------------- */
 
 const fmt = (v: number) => v.toLocaleString('en-US');
+
+/**
+ * The national benchmark's player base, written for prose: "2.5 million".
+ * The benchmark is not a small control group — it is the entire registered
+ * player base, which is the point worth making wherever it appears.
+ */
+const NATIONAL_PLAYERS = `${(TN_TOTALS.nationalUsers / 1_000_000)
+  .toFixed(1)
+  .replace(/\.0$/, '')} million`;
 
 /** The three cities at the top of the board. */
 const PODIUM = TN_CITIES.slice(0, 3);
@@ -171,8 +180,8 @@ export default function TennesseeReportPage() {
             </p>
             <p>
               So we ran it as a small case study — {fmt(TN_TOTALS.cities)} cities, side by side,
-              measured against the national {BRAND.name} average. What came back was a board that
-              looks nothing like the one we expected.
+              measured against the national {BRAND.name} average of {NATIONAL_PLAYERS} registered
+              players. What came back was a board that looks nothing like the one we expected.
             </p>
           </div>
 
@@ -188,7 +197,8 @@ export default function TennesseeReportPage() {
           <p className="tnr-note tnr-hero__note">
             Scores range from {fmt(TN_TOTALS.lowScore)} to {fmt(TN_TOTALS.topScore)}. City sizes
             vary a lot, so player counts are shown beside every single city — read the small samples
-            with that in mind.
+            with that in mind. Every city is also held up against {NATIONAL_PLAYERS} registered{' '}
+            {BRAND.name} players nationwide.
           </p>
         </div>
       </header>
@@ -204,7 +214,9 @@ export default function TennesseeReportPage() {
             <p className="tnr-lede">
               Before comparing cities to each other, it helps to know where the whole state sits.
               Averaged across all {TN_TOTALS.cities} cities, Tennessee lands{' '}
-              <strong>{fmt(NATIONAL_DELTA)} points above</strong> the national {BRAND.name} average.
+              <strong>{fmt(NATIONAL_DELTA)} points above</strong> the national {BRAND.name} average
+              — and that national number is not a small control group. It is the average of{' '}
+              <strong>{NATIONAL_PLAYERS} registered players</strong>.
             </p>
           </div>
 
@@ -223,7 +235,9 @@ export default function TennesseeReportPage() {
             <div className="tnr-curio__side" data-tone="neutral">
               <span className="tnr-curio__label">National average</span>
               <span className="tnr-curio__num">{fmt(TN_TOTALS.nationalAvg)}</span>
-              <span className="tnr-curio__sub">All {BRAND.name} players, everywhere</span>
+              <span className="tnr-curio__sub">
+                All {NATIONAL_PLAYERS} registered {BRAND.name} players
+              </span>
             </div>
           </div>
 
@@ -518,9 +532,11 @@ export default function TennesseeReportPage() {
             <h3>Method</h3>
             <p>
               Each city’s figure is the average score of its sampled players across{' '}
-              {TN_TOTALS.testsPerPlayer} tests per player on average. Locations are estimated from
-              the network location of each session, so they indicate roughly where a test originated
-              — not a player’s permanent residence.
+              {TN_TOTALS.testsPerPlayer} tests per player on average. The national benchmark of{' '}
+              {fmt(TN_TOTALS.nationalAvg)} is the all-time average across {BRAND.name}’s{' '}
+              {NATIONAL_PLAYERS} registered players. Locations are estimated from the network
+              location of each session, so they indicate roughly where a test originated — not a
+              player’s permanent residence.
             </p>
           </div>
         </div>

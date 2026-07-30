@@ -127,6 +127,7 @@ export const TN_TOTALS = {
   testsPerPlayer: ${(totalTests / totalUsers).toFixed(1)},
   /** Perkul's all-players average, used as the national benchmark. */
   nationalAvg: 8050,
+  nationalUsers: 2_500_000,
 };
 
 /**

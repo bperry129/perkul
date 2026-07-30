@@ -1125,6 +1125,11 @@ export const TN_TOTALS = {
   testsPerPlayer: 3.2,
   /** Perkul's all-players average, used as the national benchmark. */
   nationalAvg: 8050,
+  /**
+   * Registered Perkul players the national benchmark is drawn from. The
+   * benchmark is not a small control group — it is the whole player base.
+   */
+  nationalUsers: 2_500_000,
 };
 
 /**
