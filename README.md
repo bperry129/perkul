@@ -347,7 +347,9 @@ src/lib/public-payload   the only thing the browser is allowed to see
 src/content/             the authored 20-day bank + dev fixture (TOVEN/BRUME)
 src/app/                 public pages, /admin, /api route handlers
 src/components/          GameClient, ResultsView, Countdown, FindMeButton,
-                         AsSeenOn, forms
+                         AsSeenOn, StatCounter, forms
+src/assets/              perkul-logo.png (the masthead wordmark)
+
 scripts/                 seed, make-admin, validate-content, smoke, verify-score
 tests/                   time, scoring, all-time, gameplay, content
 ```
@@ -385,6 +387,52 @@ and in both legal pages. Terms and Privacy each promise a reply there, which is
 exactly the kind of fact that rots when it is copied — so `tests/contact.test.ts`
 fails the moment a literal address is pasted into any page or component, with
 form placeholders and CLI examples (`you@example.com`) explicitly allowed.
+
+### 9.3 The wordmark
+
+The masthead is artwork, `src/assets/perkul-logo.png` (850×294, transparent),
+not type — the old CSS trick of colouring the first letter with `::first-letter`
+is gone with it. It is a static import through `next/image`, so the 82 KB PNG is
+served resized and re-encoded, and `priority` stops it being lazy-loaded, which
+would only buy a visible gap at the very top of every page. `alt` is
+`BRAND.name`, so the link still reads as "Perkul" to a screen reader and a
+crawler. CSS sets **height only** (46px, 38px on small screens) and lets width
+follow the file's ratio, so re-exporting the artwork at another size cannot
+reflow the header.
+
+The favicon and apple-touch icon are still the separate marks in `src/app/`
+(`icon.svg`, `apple-icon.png`, `favicon.ico`) — they are square, so they are not
+the same asset and were left alone.
+
+### 9.4 Analytics and ads
+
+Both are site-wide in `src/app/layout.tsx`, and each is where its vendor asks
+it to be — AdSense in `<head>`, StatCounter last in `<body>`.
+
+**AdSense** (`ca-pub-3524846850046440`, override with `NEXT_PUBLIC_ADSENSE_CLIENT`)
+is a plain `<script async>` rather than `next/script`. Even with
+`strategy="beforeInteractive"`, Next emits the loader *indirectly* — a preload
+link plus a `__next_s` push — and AdSense verification is a text match on the
+served HTML, so the literal tag is the one that cannot fail for a silly reason.
+This is the loader only: **there are no ad units in the app**, so nothing is
+shown to players yet.
+
+**StatCounter** (project 13338902) is `src/components/StatCounter.tsx`, and it
+departs from the pasted snippet in three deliberate ways:
+
+- **Route changes are counted.** Most movement here is a client-side `Link`
+  navigation, so `counter.js` alone would log one view per visit no matter how
+  many pages were read. Later navigations fire StatCounter's own 1×1 endpoint;
+  the first pathname is skipped, because `counter.js` already logged it.
+- **`/admin` is excluded.** Internal page views are not traffic, and there is no
+  point polluting the numbers you are checking.
+- **The `<noscript>` block is injected as an HTML string.** Written as JSX,
+  React helpfully emits `<link rel="preload" as="image">` for the pixel in
+  `<head>` — which *fires the counter on every JS-enabled page load*, on top of
+  the `counter.js` hit, silently doubling every figure. As a string there is no
+  element for React to preload. Worth re-checking after any change here: the
+  served `<head>` must contain **no** `c.statcounter.com` URL.
+
 
 
 ---

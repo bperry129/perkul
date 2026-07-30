@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { BRAND } from '@/lib/brand';
 import { getProfile } from '@/lib/auth';
+import logo from '@/assets/perkul-logo.png';
+
 
 /** Public navigation is deliberately tiny. */
 export async function SiteHeader() {
@@ -9,10 +12,24 @@ export async function SiteHeader() {
   return (
     <header className="shell">
       <div className="masthead">
-        <Link href="/" className="masthead__brand">
-          {BRAND.name.slice(0, -1)}
-          <span>{BRAND.name.slice(-1)}</span>
+        {/*
+          The wordmark is the supplied logo, not type. `alt` carries the brand
+          name so the link still reads as "Perkul" to a screen reader and to a
+          crawler, and `priority` skips lazy-loading: it is the topmost element
+          on every page, so deferring it only buys a visible gap. Intrinsic size
+          is 850×294; the attributes keep that ratio and CSS does the sizing.
+        */}
+        <Link href="/" className="masthead__brand" aria-label={BRAND.name}>
+          <Image
+            className="masthead__logo"
+            src={logo}
+            alt={BRAND.name}
+            width={130}
+            height={45}
+            priority
+          />
         </Link>
+
         <nav className="masthead__nav" aria-label="Main">
           {/*
             A plain <a>, not a <Link>, on purpose.

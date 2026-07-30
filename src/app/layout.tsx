@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import { Baloo_2, Nunito, Spline_Sans_Mono } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 import { BRAND } from '@/lib/brand';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
+import { StatCounter } from '@/components/StatCounter';
+
+/** Google AdSense publisher. Env override so a preview deploy can run without it. */
+const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-3524846850046440';
 
 /**
  * Type system.
@@ -70,7 +73,7 @@ export const metadata: Metadata = {
   // AdSense ownership meta tag — statically present in HTML so the AdSense
   // crawler can verify the publisher without executing JavaScript.
   other: {
-    'google-adsense-account': 'ca-pub-3524846850046440',
+    'google-adsense-account': ADSENSE_CLIENT,
   },
 };
 
@@ -83,39 +86,36 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
-      {/* Google AdSense — publisher ca-pub-3524846850046440 */}
-      <Script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3524846850046440"
-        crossOrigin="anonymous"
-        strategy="afterInteractive"
-      />
+      <head>
+        {/*
+          AdSense loader, verbatim in <head> as Google's instructions specify.
+
+          A plain tag rather than `next/script`: Next emits the loader
+          indirectly (a preload link plus a `__next_s` push) under every
+          strategy, and the served HTML is what gets inspected. Ownership is
+          proved by the `google-adsense-account` meta tag above, which needs no
+          JavaScript at all; this is belt and braces, and it is the tag that
+          actually serves ads later.
+
+          Loader only — there are no ad units in the app, so players see nothing.
+        */}
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossOrigin="anonymous"
+        />
+      </head>
       <body>
         <SiteHeader />
         <main>{children}</main>
         <SiteFooter />
-        {/* StatCounter — project 13338902, perkul.com */}
-        <Script id="statcounter-vars" strategy="afterInteractive">{`
-          var sc_project=13338902;
-          var sc_invisible=1;
-          var sc_security="8069eb92";
-        `}</Script>
-        <Script
-          src="https://www.statcounter.com/counter/counter.js"
-          strategy="afterInteractive"
-        />
-        <noscript>
-          <div className="statcounter">
-            <a title="site stats" href="https://statcounter.com/" target="_blank" rel="noreferrer">
-              <img
-                className="statcounter"
-                src="https://c.statcounter.com/13338902/0/8069eb92/1/"
-                alt="site stats"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </a>
-          </div>
-        </noscript>
+        {/*
+          StatCounter (project 13338902), last in <body> as instructed. The
+          component, not an inline snippet: it also counts client-side route
+          changes, leaves /admin out, and avoids React preloading the counting
+          pixel — which would double every figure. See src/components/StatCounter.tsx.
+        */}
+        <StatCounter />
       </body>
     </html>
   );

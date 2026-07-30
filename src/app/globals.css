@@ -165,27 +165,26 @@ code {
   border-bottom: none;
 }
 
+/* The wordmark is an image (src/assets/perkul-logo.png), so this is a frame for
+   it rather than type: flex, so the link box is exactly the logo with no
+   descender gap underneath. Height is the fixed dimension and width follows the
+   file's 850×294 ratio — that way the masthead never reflows if the artwork is
+   ever re-exported at a different size. */
 .masthead__brand {
-  display: inline-block;
-  font-family: var(--serif);
-  font-size: 1.85rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1;
-  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
   text-decoration: none;
 }
 
-/* The opening letter carries the accent... */
-.masthead__brand::first-letter { color: var(--yellow); }
+.masthead__brand:hover { text-decoration: none; }
 
-.masthead__brand:hover {
-  color: #ffffff;
-  text-decoration: none;
+.masthead__logo {
+  height: 46px;
+  width: auto;
+  display: block;
 }
 
-/* ...and the rest of the wordmark stays white. */
-.masthead__brand span { color: #ffffff; }
 
 .masthead__nav {
   display: flex;
@@ -1264,8 +1263,10 @@ details.expand > summary:hover { color: var(--brand-deep); }
     padding: 1.25rem 1.15rem 1.9rem;
   }
   .masthead { padding: 0.95rem 0 0.75rem; }
-  .masthead__brand { font-size: 1.6rem; }
+  /* Shrink the artwork, not a font size — the wordmark is an image now. */
+  .masthead__logo { height: 38px; }
 }
+
 
 @media (max-width: 26rem) {
   .shell { padding: 0 0.8rem; }
