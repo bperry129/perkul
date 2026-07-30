@@ -16,8 +16,9 @@ import type { LeaderboardRow } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Leaderboard',
-  description: "Today's standings. Most right, fastest, wins.",
+  title: "Today's Leaderboard — Perkul Daily Word Game Rankings",
+  description:
+    "See today's Perkul standings. Who got the most right, who answered fastest, and where you rank against every player who completed today's word puzzle.",
 };
 
 /**

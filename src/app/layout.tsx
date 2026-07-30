@@ -34,17 +34,35 @@ const mono = Spline_Sans_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${BRAND.name} — ${BRAND.tagline}`,
+    default: `${BRAND.name} — Free Daily Word Puzzle Game`,
     template: `%s · ${BRAND.name}`,
   },
   description:
-    'A daily vocabulary game. Five words, one is fake. Ten rounds. Most right, fastest, wins.',
+    'Perkul is a free daily word puzzle game. Every round shows five words — one is completely fake. Ten rounds, a live competitive leaderboard, new puzzle every day. The best Wordle alternative for players who want more.',
+  keywords: [
+    'daily word game',
+    'word puzzle game',
+    'free word game',
+    'games like Wordle',
+    'Wordle alternative',
+    'competitive word game',
+    'daily vocabulary game',
+    'fake word game',
+    'word guessing game',
+    'online word game',
+    'word game with leaderboard',
+    'new word game every day',
+    'Perkul',
+  ],
   applicationName: BRAND.name,
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   openGraph: {
-    title: `${BRAND.name} — ${BRAND.tagline}`,
-    description: 'Five words. One isn’t real. A new puzzle every day.',
+    title: `${BRAND.name} — Free Daily Word Puzzle Game`,
+    description:
+      'Five words per round. One is fake. Ten competitive rounds, a live leaderboard, new puzzle every day. Free to play — no account needed.',
     type: 'website',
+    url: `https://${BRAND.domain}`,
+    siteName: BRAND.name,
   },
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },

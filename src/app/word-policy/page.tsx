@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import { BRAND } from '@/lib/brand';
 
 export const metadata: Metadata = {
-  title: 'Word policy',
-  description: `What ${BRAND.name} considers a word, and what it does not.`,
+  title: 'Word Policy — What Counts as a Word in Perkul',
+  description: `The vocabulary rules behind Perkul's daily word puzzle. What counts as a real word, what's excluded, and how our fabricated fake words are made. Curated modern English only.`,
 };
 
 export default function WordPolicyPage() {

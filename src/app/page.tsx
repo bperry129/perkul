@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { AsSeenOn } from '@/components/AsSeenOn';
 import { GameClient } from '@/components/GameClient';
 import { Countdown } from '@/components/Countdown';
@@ -18,6 +19,51 @@ import {
 } from '@/lib/time';
 import { logEvent } from '@/lib/analytics';
 
+export const metadata: Metadata = {
+  title: 'Perkul — Free Daily Word Puzzle Game',
+  description:
+    'Play Perkul: the free daily word puzzle game where one word in every round is fake. Ten competitive rounds, a live leaderboard, and a new puzzle every day. Better than Wordle.',
+  openGraph: {
+    title: 'Perkul — Free Daily Word Puzzle Game',
+    description:
+      'Five words per round. One is fake. Ten rounds, live leaderboard, new puzzle every day. Free to play.',
+  },
+};
+
+/** Structured data for Google — served with every page load. */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `https://${BRAND.domain}/#website`,
+      url: `https://${BRAND.domain}`,
+      name: BRAND.name,
+      description: BRAND.tagline,
+      potentialAction: {
+        '@type': 'PlayAction',
+        target: `https://${BRAND.domain}/`,
+      },
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': `https://${BRAND.domain}/#app`,
+      name: BRAND.name,
+      url: `https://${BRAND.domain}`,
+      description:
+        'A free daily competitive word puzzle game. Every round shows five words — one is fake. Ten rounds, live leaderboard, new puzzle every day.',
+      applicationCategory: 'GameApplication',
+      operatingSystem: 'Web',
+      browserRequirements: 'Requires JavaScript',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+      genre: ['Word Game', 'Puzzle', 'Daily Game'],
+    },
+  ],
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -208,6 +254,62 @@ export default async function HomePage() {
           progress; GameClient's body[data-playing] flag covers the case where
           the player presses start without a page load. */}
       {!active ? <AsSeenOn /> : null}
+
+      {/* JSON-LD structured data — rendered in the HTML, consumed by Google. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      {/* SEO content section — always server-rendered so Google indexes the
+          keyword-rich copy that describes what Perkul is and who it's for.
+          Visually low-key (small text, footer-weight) so it does not distract
+          from the game itself. */}
+      {!active ? (
+        <section
+          className="shell"
+          style={{
+            paddingTop: '3rem',
+            paddingBottom: '3rem',
+            borderTop: '1px solid rgba(255,255,255,0.18)',
+          }}
+        >
+          <div style={{ maxWidth: '640px', color: 'rgba(255,255,255,0.80)' }}>
+            <h2
+              style={{
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                color: '#fff',
+                marginBottom: '0.75rem',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              What is Perkul?
+            </h2>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.7, marginBottom: '1rem' }}>
+              Perkul is a <strong style={{ color: '#fff' }}>free daily word puzzle game</strong>{' '}
+              that challenges you to spot the fake word. Every round presents five words — four are
+              real English words, one is completely fabricated. Pick the fake. Ten rounds. Fastest
+              correct answers win. A new puzzle launches every day at midnight ET.
+            </p>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.7, marginBottom: '1rem' }}>
+              If you enjoy <strong style={{ color: '#fff' }}>games like Wordle</strong> or the NYT
+              Connections puzzle, Perkul gives you a longer, harder, and more competitive challenge.
+              Where Wordle is one word a day, Perkul is ten rounds of vocabulary pressure with a
+              live leaderboard to settle who&apos;s actually the best.
+            </p>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>
+              No app download required. No subscription. Works on any phone or desktop.{' '}
+              <Link
+                href="/how-to-play"
+                style={{ color: '#fff', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.45)' }}
+              >
+                Learn how to play →
+              </Link>
+            </p>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 
