@@ -6,7 +6,7 @@ import { Countdown } from '@/components/Countdown';
 import { BRAND, gameLabel } from '@/lib/brand';
 import { isSupabaseConfigured } from '@/lib/supabase/admin';
 import { getTodaysGame, gameSummary, probeDatabase } from '@/lib/games';
-import { findAttemptForIdentity, getActiveAttempt } from '@/lib/attempts';
+import { findAttemptForIdentity, getActiveAttempt, getChallengeInfo } from '@/lib/attempts';
 import { getIdentity } from '@/lib/auth';
 import { flagEnabled } from '@/lib/flags';
 import { formatPoints, perkulScore } from '@/lib/scoring';
@@ -78,7 +78,15 @@ export const dynamic = 'force-dynamic';
  * or "home" appeared to do nothing and there was no way back to the front page.
  */
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: { c?: string };
+}) {
+  // Challenge banner — when someone arrives via a challenge link.
+  const challengeId = searchParams?.c ?? null;
+  const challenge = challengeId ? await getChallengeInfo(challengeId).catch(() => null) : null;
+
   if (!isSupabaseConfigured()) {
     return (
       <div className="shell shell--narrow">
@@ -230,6 +238,40 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Challenge banner — shown when someone arrives via a friend's challenge link. */}
+      {challenge ? (
+        <div
+          style={{
+            background: 'var(--panel)',
+            borderBottom: '2px solid var(--brand)',
+            padding: '1rem 0',
+          }}
+        >
+          <div className="shell" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>🏆</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p
+                style={{
+                  fontWeight: 800,
+                  fontSize: 'clamp(1rem, 3.5vw, 1.2rem)',
+                  color: '#fff',
+                  margin: 0,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                <span style={{ color: 'var(--brand)' }}>{challenge.displayName}</span>
+                {' '}challenged you to beat{' '}
+                <span style={{ color: 'var(--yellow)' }}>{formatPoints(challenge.score)}</span>
+                {' '}— {challenge.correctCount}/10 in {formatElapsed(challenge.elapsedMs)}
+              </p>
+              <p style={{ color: 'var(--gray-light)', fontSize: '0.82rem', margin: '0.2rem 0 0' }}>
+                Play today&apos;s game and see if you can top their score on the leaderboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="shell shell--narrow">
         <GameClient
           game={summary}

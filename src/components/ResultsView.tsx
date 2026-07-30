@@ -151,6 +151,69 @@ function RoundEntry({ round }: { round: RoundResult }) {
   );
 }
 
+/* --------------------------------------------------------------- challenge -- */
+
+function ChallengeBlock({ result }: { result: AttemptResult }) {
+  const [state, setState] = useState<'idle' | 'copied'>('idle');
+  const challengeUrl = `https://perkul.com/?c=${result.attemptId}`;
+
+  const copy = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Can you beat my Perkul score?',
+          text: `I scored ${result.score.toLocaleString()} on today's Perkul — ${result.correctCount}/${result.roundsTotal} correct. Think you can beat me?`,
+          url: challengeUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(challengeUrl);
+        setState('copied');
+        window.setTimeout(() => setState('idle'), 2400);
+      }
+    } catch {
+      // fallback: show link inline
+    }
+  };
+
+  if (!result.isRanked) return null;
+
+  return (
+    <div
+      style={{
+        background: 'var(--panel)',
+        borderRadius: '14px',
+        padding: '1.4rem 1.6rem',
+        margin: '1.5rem 0',
+      }}
+    >
+      <p
+        style={{
+          fontWeight: 800,
+          fontSize: 'clamp(1.1rem, 4vw, 1.35rem)',
+          color: '#fff',
+          margin: '0 0 0.35rem',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.2,
+        }}
+      >
+        Challenge a friend to beat your score of{' '}
+        <span style={{ color: 'var(--brand)' }}>{result.score.toLocaleString()}</span>
+      </p>
+      <p style={{ color: 'var(--gray-light)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
+        Send them a link — they&apos;ll see your score and have to beat it to top the board.
+      </p>
+      <button
+        type="button"
+        className="action"
+        onClick={copy}
+        style={{ fontSize: '0.9rem' }}
+      >
+        {state === 'copied' ? '✓ Link copied!' : '🏆 Copy challenge link'}
+      </button>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------- sharing -- */
 
 function ShareBlock({ result }: { result: AttemptResult }) {
@@ -292,6 +355,10 @@ export function ResultsView({
           is still saved to your history.
         </div>
       ) : null}
+
+      {/* Challenge CTA — the main viral sharing hook. Prominent, before the
+          generic share button. Only shown for ranked attempts (not practice). */}
+      <ChallengeBlock result={result} />
 
       {sharingEnabled ? <ShareBlock result={result} /> : null}
 

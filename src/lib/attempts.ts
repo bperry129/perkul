@@ -15,6 +15,7 @@ import {
   computeStreaks,
   evaluateIntegrity,
   percentileFromRank,
+  perkulScore,
   scoreBreakdown,
 } from './scoring';
 
@@ -845,7 +846,7 @@ export async function getPlayerHistory(userId: string, limit = 30): Promise<Hist
       game_number: number;
       active_date: string;
     };
-    return {
+      return {
       attemptId: row.id as string,
       gameNumber: game.game_number,
       activeDate: game.active_date,
@@ -855,4 +856,62 @@ export async function getPlayerHistory(userId: string, limit = 30): Promise<Hist
       isRanked: Boolean(row.is_ranked),
     };
   });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Challenge links                                                             */
+/* -------------------------------------------------------------------------- */
+
+export type ChallengeInfo = {
+  displayName: string;
+  score: number;
+  correctCount: number;
+  elapsedMs: number;
+};
+
+/**
+ * Returns the public-facing information for a challenge banner.
+ * No ownership check: we expose only score + name, which is public
+ * leaderboard data.  Returns null if the attempt cannot be found or is
+ * not completed/ranked.
+ */
+export async function getChallengeInfo(attemptId: string): Promise<ChallengeInfo | null> {
+  if (!attemptId) return null;
+
+  const db = serviceClient();
+
+  const { data: row } = await db
+    .from('attempts')
+    .select('id, user_id, score, correct_count, elapsed_ms, completion_status, is_ranked, integrity_status, display_name_override')
+    .eq('id', attemptId)
+    .eq('completion_status', 'completed')
+    .eq('is_ranked', true)
+    .maybeSingle();
+
+  if (!row) return null;
+
+  const r = row as Record<string, unknown>;
+
+  // Resolve display name: override → profile → Guest
+  let displayName = 'a friend';
+  if (r.display_name_override) {
+    displayName = r.display_name_override as string;
+  } else if (r.user_id) {
+    const { data: profile } = await db
+      .from('profiles')
+      .select('display_name')
+      .eq('user_id', r.user_id)
+      .maybeSingle();
+    const p = profile as Record<string, unknown> | null;
+    if (p?.display_name) displayName = p.display_name as string;
+  }
+
+  const correctCount = Number(r.correct_count ?? 0);
+  const elapsedMs = Number(r.elapsed_ms ?? 0);
+  const score =
+    r.score != null
+      ? Number(r.score)
+      : perkulScore(correctCount, elapsedMs);
+
+  return { displayName, score, correctCount, elapsedMs };
 }
