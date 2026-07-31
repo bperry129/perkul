@@ -66,12 +66,16 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* The green canvas lives here, not on body, and that is deliberate: the
+     ambient bubble layer (.bubbles) sits on z-index -1, which paints above the
+     root background but below body's own background box. Leave the green on body
+     and the bubbles are painted over and invisible. */
+  background: var(--brand);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--brand);
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
@@ -1391,6 +1395,70 @@ details.expand > summary:hover { color: var(--brand-deep); }
   }
   100% {
     transform: translate(calc(var(--dx) * -1), calc(var(--dy) * -0.9)) scale(0.95);
+  }
+}
+
+/* ---------------------------------------------------------- ambient bubbles --
+   Faint circles floating in the green margins either side of the page. Purely
+   atmospheric — see src/components/AmbientBubbles.tsx for the placements.
+
+   The whole layer is fixed and sits on z-index -1, behind every bit of content
+   but above the green canvas (which is why the green is set on html above).
+
+   Each side is its own clipped column, so the circles are contained by the
+   layout rather than by carefully chosen coordinates: whatever the numbers in
+   the component say, nothing can appear over the card in the middle. The centre
+   reserve is 47rem — comfortably wider than the 46rem `.shell` — and `max()`
+   keeps the columns from going negative on narrow viewports. */
+.bubbles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.bubbles__gutter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: max(0px, calc((100vw - 47rem) / 2));
+  overflow: hidden;
+}
+
+.bubbles__gutter--left { left: 0; }
+.bubbles__gutter--right { right: 0; }
+
+/* No gutters worth floating in, so nothing renders and nothing animates. */
+@media (max-width: 68rem) {
+  .bubbles { display: none; }
+}
+
+/* Same rule as the press badge: the screen holds still while the clock runs. */
+body[data-playing] .bubbles { display: none; }
+
+.bubble {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  /* Off-centre highlight and a soft edge — a bubble catching the light rather
+     than a flat disc. */
+  background: radial-gradient(circle at 32% 28%, var(--tint) 0%, transparent 72%);
+  filter: blur(var(--blur, 12px));
+  opacity: var(--alpha, 0.1);
+  animation: bubble-float var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+
+/* Mostly a slow rise, with enough sideways wander that they do not look like
+   they are on rails. `alternate` means they sink back down again rather than
+   jumping to the start. */
+@keyframes bubble-float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(var(--dx), var(--dy)) scale(1.06); }
+  100% {
+    transform: translate(calc(var(--dx) * -0.6), calc(var(--dy) * -0.25)) scale(0.94);
   }
 }
 

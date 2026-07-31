@@ -5,6 +5,7 @@ import { BRAND } from '@/lib/brand';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { StatCounter } from '@/components/StatCounter';
+import { AmbientBubbles } from '@/components/AmbientBubbles';
 
 /** Google AdSense publisher. Env override so a preview deploy can run without it. */
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-3524846850046440';
@@ -106,6 +107,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        {/*
+          Decorative circles floating in the green either side of the page. First
+          in the body so it is out of the way of everything that matters; it is
+          fixed and on z-index -1, so document order is irrelevant to painting.
+          Wide screens only, and it hides itself during a timed round.
+        */}
+        <AmbientBubbles />
         <SiteHeader />
         <main>{children}</main>
         <SiteFooter />
