@@ -1284,124 +1284,98 @@ details.expand > summary:hover { color: var(--brand-deep); }
    This is the one message on the site whose job is to be noticed: it appears
    the moment a player has been told the ranked game is over for the day, so it
    is the difference between leaving and staying. Everything else here is
-   white-on-green, so this goes the other way — a dark blue panel bleeding into
-   red at one corner. Nothing else on the site is dark, which is the whole
-   reason the eye lands on it.
+   white-on-green, so this goes the other way entirely — a blue-into-red
+   gradient, the only place on the site those colours appear at all.
 
-   Behind the text is a faint starfield: small points that breathe slowly, and
-   one streak that crosses every so often. It is meant to register as texture
-   rather than animation, so the stars never reach full white and the streak is
-   invisible for most of its cycle. Positions, sizes and delays come in as
-   custom properties from the markup, since CSS cannot vary them per element.
+   Behind the text, soft circles drift slowly around the box. They are heavily
+   blurred and semi-transparent, so they read as colour moving under the surface
+   rather than as shapes — the gradient appears to shift while the copy stays
+   put. Size, position, tint, travel distance and speed all come in as custom
+   properties from the markup, since CSS cannot vary them per element.
 
-   Under prefers-reduced-motion the stars simply hold still at their resting
-   opacity and the streak is removed. */
+   Everything decorative is clipped by `overflow: hidden` and sits under the
+   text on `z-index: 0`. Under prefers-reduced-motion the circles stop where
+   they are, which is simply a static gradient with a bit of depth. */
 .archive-nudge {
   position: relative;
   overflow: hidden;
   isolation: isolate;
   margin: 1.6rem 0;
-  padding: 1.1rem 1.3rem;
+  padding: 1.15rem 1.35rem;
   border-radius: var(--r-card);
-  border: 1px solid #2c4276;
-  /* Deep blue, warming to a muted red in the far corner. */
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  /* Blue at the top left, red across the bottom right, meeting in the middle. */
   background:
-    radial-gradient(75% 130% at 100% 8%, rgba(150, 44, 66, 0.4) 0%, rgba(16, 24, 54, 0) 62%),
-    linear-gradient(135deg, #16224b 0%, #111a3d 48%, #1a1839 100%);
-  color: #dde5fa;
+    radial-gradient(85% 120% at 6% 0%, rgba(46, 92, 220, 0.55) 0%, rgba(46, 92, 220, 0) 62%),
+    linear-gradient(118deg, #1b3ba0 0%, #4b2a86 40%, #9c1f45 74%, #c22a45 100%);
+  color: rgba(255, 255, 255, 0.94);
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.55;
-  box-shadow: 0 6px 20px rgba(8, 13, 34, 0.34);
+  box-shadow: 0 8px 24px rgba(90, 20, 45, 0.32);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .archive-nudge:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgba(8, 13, 34, 0.42);
+  box-shadow: 0 12px 30px rgba(90, 20, 45, 0.4);
 }
 
-/* Text sits above the starfield. */
+/* Text sits above the drifting circles. */
 .archive-nudge > * { position: relative; z-index: 1; }
 
 .archive-nudge strong { color: #ffffff; }
 
 .archive-nudge a {
-  color: #a8c5ff;
+  color: #ffffff;
   text-decoration: underline;
   text-decoration-thickness: 2px;
-  text-decoration-color: rgba(168, 197, 255, 0.4);
+  text-decoration-color: rgba(255, 255, 255, 0.5);
   text-underline-offset: 2px;
 }
 
 .archive-nudge a:hover {
   color: #ffffff;
-  text-decoration-color: rgba(255, 255, 255, 0.7);
+  text-decoration-color: #ffffff;
 }
 
-.archive-nudge__sky {
+.archive-nudge__field {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
 }
 
-/* -- stars ------------------------------------------------------------------ */
+/* -- drifting circles ------------------------------------------------------- */
 
-/* Deliberately dim: a 1–2px point with a soft halo, peaking well short of
-   white so it stays behind the copy rather than competing with it. */
-.archive-nudge__star {
+/* A blurred radial fill rather than a flat disc, so there is no hard edge to
+   catch the eye — at this blur radius each one is a bloom of colour, not a
+   circle you would think to count. */
+.archive-nudge__orb {
   position: absolute;
   top: var(--y);
   left: var(--x);
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  background: rgba(226, 236, 255, 0.9);
-  box-shadow: 0 0 4px 1px rgba(170, 200, 255, 0.4);
-  opacity: 0.3;
-  animation: archive-twinkle var(--dur) ease-in-out var(--delay) infinite;
+  background: radial-gradient(circle at 34% 30%, var(--tint) 0%, transparent 70%);
+  filter: blur(7px);
+  opacity: var(--alpha, 0.5);
+  /* `alternate` so each one wanders out and back rather than snapping home. */
+  animation: archive-drift var(--dur) ease-in-out var(--delay) infinite alternate;
 }
 
-@keyframes archive-twinkle {
-  0%, 100% { opacity: 0.14; }
-  50% { opacity: 0.7; }
-}
-
-/* -- shooting star ---------------------------------------------------------- */
-
-/* One streak, on a long cycle: visible for roughly a tenth of it, so it reads
-   as something you half-catch rather than a loop you can watch. */
-.archive-nudge__shoot {
-  position: absolute;
-  top: var(--y);
-  left: var(--x);
-  width: 70px;
-  height: 1px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(200, 220, 255, 0.4) 72%,
-    rgba(255, 255, 255, 0.75) 100%
-  );
-  opacity: 0;
-  animation: archive-shoot var(--dur) linear var(--delay) infinite;
-}
-
-@keyframes archive-shoot {
-  0% { opacity: 0; transform: rotate(18deg) translateX(-60px) scaleX(0.4); }
-  3% { opacity: 0.65; }
-  11% { opacity: 0; transform: rotate(18deg) translateX(190px) scaleX(1); }
-  100% { opacity: 0; transform: rotate(18deg) translateX(190px) scaleX(1); }
+@keyframes archive-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(var(--dx), var(--dy)) scale(1.14); }
+  100% {
+    transform: translate(calc(var(--dx) * -0.55), calc(var(--dy) * -0.7)) scale(0.92);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
   .reveal span { opacity: 1; transform: none; }
-  /* Stars hold still at their resting opacity, which is fine. The streak is
-     only ever visible mid-flight, so frozen it would be a stray dash. */
-  .archive-nudge__shoot { display: none; }
 }
 
 ::selection { background: var(--yellow); color: var(--ink); }
