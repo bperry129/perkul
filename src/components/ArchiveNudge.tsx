@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 /**
- * The "not done playing?" panel — a blue-into-red card with soft circles
- * drifting behind the text.
+ * The "not done playing?" panel — a red card with a blue border and soft
+ * circles roaming behind the text.
  *
  * Shared by the played-today homepage and the results page, which is the whole
  * reason it is a component: both appear at the moment a player has just been
@@ -19,23 +19,26 @@ import Link from 'next/link';
  * on every render and, in a server component, differ between the server HTML and
  * the client — a hydration mismatch.
  *
- * Each one gets a position, a diameter, a tint, and a `dx`/`dy` it drifts by.
+ * Each one gets a position, a diameter, a tint, and a `dx`/`dy` it travels by.
  * They are large and heavily blurred by the CSS, so most sit partly outside the
- * box and only their bloom shows; the point is colour shifting under the text,
- * not shapes crossing it. Durations are long (14–26s) and unrelated to each
- * other, so the panel never appears to loop.
+ * box and only their bloom shows; the point is colour moving under the text, not
+ * shapes crossing it. That blur is also what lets them travel this far — 70–130px
+ * over 7–13s is real movement, but with no hard edge to track it still reads as
+ * the background churning rather than objects flying past. Durations are prime-ish
+ * and unrelated, so the panel never settles into a visible loop.
+ *
+ * Tints are blue and pale on a red ground: the reds that were here before are
+ * now invisible against the gradient, and the blue ties the motion to the border.
  */
 const ORBS = [
-  // Blue, top-left through the middle.
-  { x: '-6%', y: '-40%', size: '120px', tint: 'rgba(88, 140, 255, 0.85)', alpha: 0.5, dx: '26px', dy: '18px', dur: '19s', delay: '0s' },
-  { x: '18%', y: '35%', size: '70px', tint: 'rgba(120, 170, 255, 0.7)', alpha: 0.4, dx: '-22px', dy: '-14px', dur: '23s', delay: '2s' },
-  { x: '40%', y: '-25%', size: '90px', tint: 'rgba(70, 110, 235, 0.7)', alpha: 0.38, dx: '18px', dy: '24px', dur: '26s', delay: '4s' },
-  // Red, centre through bottom-right.
-  { x: '52%', y: '45%', size: '110px', tint: 'rgba(232, 70, 96, 0.8)', alpha: 0.5, dx: '-26px', dy: '-18px', dur: '21s', delay: '1s' },
-  { x: '74%', y: '-20%', size: '86px', tint: 'rgba(214, 48, 82, 0.75)', alpha: 0.45, dx: '20px', dy: '22px', dur: '17s', delay: '3s' },
-  { x: '88%', y: '52%', size: '130px', tint: 'rgba(255, 92, 110, 0.7)', alpha: 0.42, dx: '-18px', dy: '-22px', dur: '24s', delay: '5s' },
-  // One pale bloom to lift the middle where the two colours meet.
-  { x: '30%', y: '-10%', size: '64px', tint: 'rgba(255, 255, 255, 0.5)', alpha: 0.22, dx: '30px', dy: '12px', dur: '14s', delay: '6s' },
+  { x: '-8%', y: '-45%', size: '130px', tint: 'rgba(74, 123, 240, 0.95)', alpha: 0.55, dx: '96px', dy: '54px', dur: '9s', delay: '0s' },
+  { x: '20%', y: '30%', size: '78px', tint: 'rgba(130, 175, 255, 0.85)', alpha: 0.45, dx: '-88px', dy: '-46px', dur: '11s', delay: '0.7s' },
+  { x: '42%', y: '-30%', size: '96px', tint: 'rgba(58, 100, 225, 0.85)', alpha: 0.42, dx: '74px', dy: '68px', dur: '13s', delay: '1.6s' },
+  { x: '55%', y: '42%', size: '112px', tint: 'rgba(96, 140, 250, 0.9)', alpha: 0.5, dx: '-104px', dy: '-58px', dur: '10s', delay: '0.3s' },
+  { x: '76%', y: '-22%', size: '88px', tint: 'rgba(150, 190, 255, 0.8)', alpha: 0.44, dx: '82px', dy: '72px', dur: '8s', delay: '2.2s' },
+  { x: '90%', y: '48%', size: '134px', tint: 'rgba(70, 118, 235, 0.9)', alpha: 0.46, dx: '-92px', dy: '-64px', dur: '12s', delay: '1.1s' },
+  // A pale bloom, faster than the rest, to keep the middle from going flat.
+  { x: '32%', y: '-12%', size: '70px', tint: 'rgba(255, 255, 255, 0.6)', alpha: 0.26, dx: '112px', dy: '40px', dur: '7s', delay: '2.8s' },
 ] as const;
 
 export function ArchiveNudge({

@@ -1284,14 +1284,17 @@ details.expand > summary:hover { color: var(--brand-deep); }
    This is the one message on the site whose job is to be noticed: it appears
    the moment a player has been told the ranked game is over for the day, so it
    is the difference between leaving and staying. Everything else here is
-   white-on-green, so this goes the other way entirely — a blue-into-red
-   gradient, the only place on the site those colours appear at all.
+   white-on-green, so this goes the other way entirely — red and blue, the only
+   place on the site either colour appears at all.
 
-   Behind the text, soft circles drift slowly around the box. They are heavily
-   blurred and semi-transparent, so they read as colour moving under the surface
-   rather than as shapes — the gradient appears to shift while the copy stays
-   put. Size, position, tint, travel distance and speed all come in as custom
-   properties from the markup, since CSS cannot vary them per element.
+   Red gradient, blue border — the two kept apart rather than blended,
+   so the outline reads as a deliberate frame instead of part of the wash.
+
+   Behind the text, soft circles roam around the box. They are heavily blurred
+   and semi-transparent, so even moving a good distance they read as colour
+   shifting under the surface rather than as shapes crossing the copy. Size,
+   position, tint, travel distance and speed all come in as custom properties
+   from the markup, since CSS cannot vary them per element.
 
    Everything decorative is clipped by `overflow: hidden` and sits under the
    text on `z-index: 0`. Under prefers-reduced-motion the circles stop where
@@ -1303,22 +1306,24 @@ details.expand > summary:hover { color: var(--brand-deep); }
   margin: 1.6rem 0;
   padding: 1.15rem 1.35rem;
   border-radius: var(--r-card);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  /* Blue at the top left, red across the bottom right, meeting in the middle. */
+  /* The blue is the frame, not the fill. Inset ring doubles it up so the edge
+     still reads at a glance on a busy red background. */
+  border: 2px solid #4a7bf0;
+  box-shadow: 0 8px 24px rgba(90, 20, 45, 0.32), inset 0 0 0 1px rgba(120, 160, 255, 0.35);
+  /* Red throughout: a lighter scarlet top-left falling away to deep crimson. */
   background:
-    radial-gradient(85% 120% at 6% 0%, rgba(46, 92, 220, 0.55) 0%, rgba(46, 92, 220, 0) 62%),
-    linear-gradient(118deg, #1b3ba0 0%, #4b2a86 40%, #9c1f45 74%, #c22a45 100%);
-  color: rgba(255, 255, 255, 0.94);
+    radial-gradient(90% 130% at 12% 0%, rgba(255, 106, 116, 0.5) 0%, rgba(255, 106, 116, 0) 60%),
+    linear-gradient(125deg, #d02444 0%, #ab1739 42%, #8a1030 72%, #6f0c26 100%);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.55;
-  box-shadow: 0 8px 24px rgba(90, 20, 45, 0.32);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .archive-nudge:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 30px rgba(90, 20, 45, 0.4);
+  box-shadow: 0 12px 30px rgba(90, 20, 45, 0.42), inset 0 0 0 1px rgba(150, 185, 255, 0.5);
 }
 
 /* Text sits above the drifting circles. */
@@ -1359,17 +1364,28 @@ details.expand > summary:hover { color: var(--brand-deep); }
   height: var(--size);
   border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, var(--tint) 0%, transparent 70%);
-  filter: blur(7px);
+  filter: blur(8px);
   opacity: var(--alpha, 0.5);
-  /* `alternate` so each one wanders out and back rather than snapping home. */
+  /* `alternate` so each one retraces its path instead of snapping home at the
+     end of the cycle — with four waypoints out and four back, the route is long
+     enough that you never catch it repeating. */
   animation: archive-drift var(--dur) ease-in-out var(--delay) infinite alternate;
 }
 
+/* Both axes move independently and the scale swings with them, so a circle
+   grows as it crosses and shrinks as it retreats — much more sense of travel
+   than sliding a fixed disc from A to B. */
 @keyframes archive-drift {
   0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(var(--dx), var(--dy)) scale(1.14); }
+  30% { transform: translate(var(--dx), var(--dy)) scale(1.2); }
+  55% {
+    transform: translate(calc(var(--dx) * 0.25), calc(var(--dy) * 1.5)) scale(1.05);
+  }
+  78% {
+    transform: translate(calc(var(--dx) * -0.7), calc(var(--dy) * 0.5)) scale(1.16);
+  }
   100% {
-    transform: translate(calc(var(--dx) * -0.55), calc(var(--dy) * -0.7)) scale(0.92);
+    transform: translate(calc(var(--dx) * -1), calc(var(--dy) * -0.9)) scale(0.9);
   }
 }
 
