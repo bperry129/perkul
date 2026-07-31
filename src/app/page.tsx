@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ArchiveNudge } from '@/components/ArchiveNudge';
 import { AsSeenOn } from '@/components/AsSeenOn';
 import { GameClient } from '@/components/GameClient';
 import { Countdown } from '@/components/Countdown';
@@ -246,14 +247,15 @@ export default async function HomePage({
         </p>
 
         {/* The whole point of the archive: "come back tomorrow" is a poor answer
-            to someone who wants to keep playing right now. */}
-        <div className="notice" style={{ marginTop: '1.6rem' }}>
-          <strong>Not done playing?</strong> Every previous puzzle is still available in the{' '}
-          <Link href="/archive">puzzle archive</Link> —{' '}
-          {archiveCount > 0 ? `${archiveCount} past games` : 'past games'} you can play right now,
-          just for fun. They never affect the leaderboard or your streak, but they do count in your
-          statistics.
-        </div>
+            to someone who wants to keep playing right now. Given a bit of motion
+            because this is the one message on the page worth interrupting for. */}
+        <ArchiveNudge cta="Browse all past puzzles →">
+          <strong>Not done playing? 🫧</strong> There{' '}
+          {archiveCount === 1 ? 'is' : 'are'}{' '}
+          <strong>{archiveCount > 0 ? archiveCount : 'more'}</strong> past{' '}
+          {archiveCount === 1 ? 'puzzle' : 'puzzles'} you can play right now, just for fun — they
+          never affect the leaderboard or your streak, but they do count in your statistics.
+        </ArchiveNudge>
 
         <div className="toolbar" style={{ marginTop: '1.6rem' }}>
           <Link className="action" href="/archive">

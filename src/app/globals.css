@@ -1278,9 +1278,94 @@ details.expand > summary:hover { color: var(--brand-deep); }
   .score__grade { margin-left: 0; }
 }
 
+/* ----------------------------------------------------------- archive nudge --
+   The "not done playing?" panel. This is the one piece of copy on the site
+   whose whole job is to be noticed — it appears at the moment a player has
+   just been told they cannot play the ranked game again today, and it is the
+   difference between leaving and staying. So it gets a treatment no other
+   notice gets: a green-to-yellow wash, a brand border, and bubbles drifting
+   up behind the text.
+
+   The bubbles are decorative spans, not pseudo-elements, because six of them
+   need six different sizes, positions, speeds and delays — passed in as custom
+   properties from the markup. `overflow: hidden` keeps them inside the rounded
+   box and `isolation: isolate` keeps the stacking context local. The global
+   prefers-reduced-motion rule below switches the animation off entirely, and
+   the panel still reads perfectly as a static gradient. */
+.archive-nudge {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  margin: 1.6rem 0;
+  padding: 1.05rem 1.25rem;
+  border-radius: var(--r-card);
+  border: 2px solid var(--brand);
+  background: linear-gradient(135deg, var(--brand-tint) 0%, #f5fbf8 52%, var(--yellow-tint) 100%);
+  color: var(--ink);
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.55;
+  box-shadow: 0 6px 18px rgba(46, 133, 96, 0.14);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.archive-nudge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(46, 133, 96, 0.2);
+}
+
+/* Text sits above the bubble layer. */
+.archive-nudge > * { position: relative; z-index: 1; }
+
+.archive-nudge strong { color: var(--brand-dark); }
+
+.archive-nudge a {
+  color: var(--brand-dark);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+.archive-nudge a:hover { color: var(--ink); }
+
+.archive-nudge__bubbles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.archive-nudge__bubbles span {
+  position: absolute;
+  bottom: -20%;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(255, 255, 255, 0.95),
+    rgba(77, 181, 136, 0.3) 62%,
+    rgba(77, 181, 136, 0.1)
+  );
+  border: 1px solid rgba(77, 181, 136, 0.34);
+  opacity: 0;
+  animation: archive-bubble var(--dur) linear var(--delay) infinite;
+}
+
+@keyframes archive-bubble {
+  0%   { bottom: -20%; opacity: 0; transform: translateX(0) scale(0.7); }
+  16%  { opacity: 0.9; }
+  50%  { transform: translateX(9px) scale(1); }
+  86%  { opacity: 0.4; }
+  100% { bottom: 118%; opacity: 0; transform: translateX(-7px) scale(1.12); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
   .reveal span { opacity: 1; transform: none; }
+  /* Without the drift the bubbles would sit frozen in a heap at the bottom. */
+  .archive-nudge__bubbles { display: none; }
 }
 
 ::selection { background: var(--yellow); color: var(--ink); }

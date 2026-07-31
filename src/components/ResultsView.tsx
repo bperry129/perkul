@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArchiveNudge } from './ArchiveNudge';
 import { BRAND, gameLabel } from '@/lib/brand';
 import { formatPoints } from '@/lib/scoring';
 import { formatElapsed, formatSeconds } from '@/lib/time';
@@ -394,11 +395,11 @@ export function ResultsView({
         {/* The archive is the only thing left to play once the daily game is
             done, so it is offered here rather than buried in the footer. Shown
             for practice runs too — someone replaying today clearly wants more. */}
-        <div className="notice" style={{ marginTop: '1.5rem' }}>
-          <strong>Want another one right now?</strong> Play any previous day&apos;s puzzle in the{' '}
-          <a href="/archive">puzzle archive</a>. Archive games are just for fun — they never touch
-          the leaderboard or your streak, but they do count in your statistics.
-        </div>
+        <ArchiveNudge cta="Open the puzzle archive →">
+          <strong>Want another one right now? 🫧</strong> Every previous day&apos;s puzzle is still
+          playable. Archive games are just for fun — they never touch the leaderboard or your
+          streak, but they do count in your statistics.
+        </ArchiveNudge>
 
       {sharingEnabled ? <ShareBlock result={result} /> : null}
 
