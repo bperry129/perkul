@@ -1279,93 +1279,129 @@ details.expand > summary:hover { color: var(--brand-deep); }
 }
 
 /* ----------------------------------------------------------- archive nudge --
-   The "not done playing?" panel. This is the one piece of copy on the site
-   whose whole job is to be noticed — it appears at the moment a player has
-   just been told they cannot play the ranked game again today, and it is the
-   difference between leaving and staying. So it gets a treatment no other
-   notice gets: a green-to-yellow wash, a brand border, and bubbles drifting
-   up behind the text.
+   The "not done playing?" panel.
 
-   The bubbles are decorative spans, not pseudo-elements, because six of them
-   need six different sizes, positions, speeds and delays — passed in as custom
-   properties from the markup. `overflow: hidden` keeps them inside the rounded
-   box and `isolation: isolate` keeps the stacking context local. The global
-   prefers-reduced-motion rule below switches the animation off entirely, and
-   the panel still reads perfectly as a static gradient. */
+   This is the one message on the site whose job is to be noticed: it appears
+   the moment a player has been told the ranked game is over for the day, so it
+   is the difference between leaving and staying. Everything else here is
+   white-on-green, so this goes the other way — a dark blue panel bleeding into
+   red at one corner. Nothing else on the site is dark, which is the whole
+   reason the eye lands on it.
+
+   Behind the text is a faint starfield: small points that breathe slowly, and
+   one streak that crosses every so often. It is meant to register as texture
+   rather than animation, so the stars never reach full white and the streak is
+   invisible for most of its cycle. Positions, sizes and delays come in as
+   custom properties from the markup, since CSS cannot vary them per element.
+
+   Under prefers-reduced-motion the stars simply hold still at their resting
+   opacity and the streak is removed. */
 .archive-nudge {
   position: relative;
   overflow: hidden;
   isolation: isolate;
   margin: 1.6rem 0;
-  padding: 1.05rem 1.25rem;
+  padding: 1.1rem 1.3rem;
   border-radius: var(--r-card);
-  border: 2px solid var(--brand);
-  background: linear-gradient(135deg, var(--brand-tint) 0%, #f5fbf8 52%, var(--yellow-tint) 100%);
-  color: var(--ink);
-  font-size: 0.96rem;
+  border: 1px solid #2c4276;
+  /* Deep blue, warming to a muted red in the far corner. */
+  background:
+    radial-gradient(75% 130% at 100% 8%, rgba(150, 44, 66, 0.4) 0%, rgba(16, 24, 54, 0) 62%),
+    linear-gradient(135deg, #16224b 0%, #111a3d 48%, #1a1839 100%);
+  color: #dde5fa;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.55;
-  box-shadow: 0 6px 18px rgba(46, 133, 96, 0.14);
+  box-shadow: 0 6px 20px rgba(8, 13, 34, 0.34);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .archive-nudge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(46, 133, 96, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(8, 13, 34, 0.42);
 }
 
-/* Text sits above the bubble layer. */
+/* Text sits above the starfield. */
 .archive-nudge > * { position: relative; z-index: 1; }
 
-.archive-nudge strong { color: var(--brand-dark); }
+.archive-nudge strong { color: #ffffff; }
 
 .archive-nudge a {
-  color: var(--brand-dark);
+  color: #a8c5ff;
   text-decoration: underline;
   text-decoration-thickness: 2px;
+  text-decoration-color: rgba(168, 197, 255, 0.4);
   text-underline-offset: 2px;
 }
 
-.archive-nudge a:hover { color: var(--ink); }
+.archive-nudge a:hover {
+  color: #ffffff;
+  text-decoration-color: rgba(255, 255, 255, 0.7);
+}
 
-.archive-nudge__bubbles {
+.archive-nudge__sky {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
 }
 
-.archive-nudge__bubbles span {
+/* -- stars ------------------------------------------------------------------ */
+
+/* Deliberately dim: a 1–2px point with a soft halo, peaking well short of
+   white so it stays behind the copy rather than competing with it. */
+.archive-nudge__star {
   position: absolute;
-  bottom: -20%;
+  top: var(--y);
   left: var(--x);
   width: var(--size);
   height: var(--size);
-  border-radius: 999px;
-  background: radial-gradient(
-    circle at 32% 28%,
-    rgba(255, 255, 255, 0.95),
-    rgba(77, 181, 136, 0.3) 62%,
-    rgba(77, 181, 136, 0.1)
-  );
-  border: 1px solid rgba(77, 181, 136, 0.34);
-  opacity: 0;
-  animation: archive-bubble var(--dur) linear var(--delay) infinite;
+  border-radius: 50%;
+  background: rgba(226, 236, 255, 0.9);
+  box-shadow: 0 0 4px 1px rgba(170, 200, 255, 0.4);
+  opacity: 0.3;
+  animation: archive-twinkle var(--dur) ease-in-out var(--delay) infinite;
 }
 
-@keyframes archive-bubble {
-  0%   { bottom: -20%; opacity: 0; transform: translateX(0) scale(0.7); }
-  16%  { opacity: 0.9; }
-  50%  { transform: translateX(9px) scale(1); }
-  86%  { opacity: 0.4; }
-  100% { bottom: 118%; opacity: 0; transform: translateX(-7px) scale(1.12); }
+@keyframes archive-twinkle {
+  0%, 100% { opacity: 0.14; }
+  50% { opacity: 0.7; }
+}
+
+/* -- shooting star ---------------------------------------------------------- */
+
+/* One streak, on a long cycle: visible for roughly a tenth of it, so it reads
+   as something you half-catch rather than a loop you can watch. */
+.archive-nudge__shoot {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: 70px;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(200, 220, 255, 0.4) 72%,
+    rgba(255, 255, 255, 0.75) 100%
+  );
+  opacity: 0;
+  animation: archive-shoot var(--dur) linear var(--delay) infinite;
+}
+
+@keyframes archive-shoot {
+  0% { opacity: 0; transform: rotate(18deg) translateX(-60px) scaleX(0.4); }
+  3% { opacity: 0.65; }
+  11% { opacity: 0; transform: rotate(18deg) translateX(190px) scaleX(1); }
+  100% { opacity: 0; transform: rotate(18deg) translateX(190px) scaleX(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
   .reveal span { opacity: 1; transform: none; }
-  /* Without the drift the bubbles would sit frozen in a heap at the bottom. */
-  .archive-nudge__bubbles { display: none; }
+  /* Stars hold still at their resting opacity, which is fine. The streak is
+     only ever visible mid-flight, so frozen it would be a stray dash. */
+  .archive-nudge__shoot { display: none; }
 }
 
 ::selection { background: var(--yellow); color: var(--ink); }

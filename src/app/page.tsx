@@ -250,7 +250,7 @@ export default async function HomePage({
             to someone who wants to keep playing right now. Given a bit of motion
             because this is the one message on the page worth interrupting for. */}
         <ArchiveNudge cta="Browse all past puzzles →">
-          <strong>Not done playing? 🫧</strong> There{' '}
+          <strong>Not done playing?</strong> There{' '}
           {archiveCount === 1 ? 'is' : 'are'}{' '}
           <strong>{archiveCount > 0 ? archiveCount : 'more'}</strong> past{' '}
           {archiveCount === 1 ? 'puzzle' : 'puzzles'} you can play right now, just for fun — they

@@ -396,7 +396,7 @@ export function ResultsView({
             done, so it is offered here rather than buried in the footer. Shown
             for practice runs too — someone replaying today clearly wants more. */}
         <ArchiveNudge cta="Open the puzzle archive →">
-          <strong>Want another one right now? 🫧</strong> Every previous day&apos;s puzzle is still
+          <strong>Want another one right now?</strong> Every previous day&apos;s puzzle is still
           playable. Archive games are just for fun — they never touch the leaderboard or your
           streak, but they do count in your statistics.
         </ArchiveNudge>
