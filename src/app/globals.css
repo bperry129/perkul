@@ -1283,18 +1283,21 @@ details.expand > summary:hover { color: var(--brand-deep); }
 
    This is the one message on the site whose job is to be noticed: it appears
    the moment a player has been told the ranked game is over for the day, so it
-   is the difference between leaving and staying. Everything else here is
-   white-on-green, so this goes the other way entirely — red and blue, the only
-   place on the site either colour appears at all.
+   is the difference between leaving and staying.
 
-   Red gradient, blue border — the two kept apart rather than blended,
-   so the outline reads as a deliberate frame instead of part of the wash.
+   It gets noticed by being the only warm surface in a green-and-white room, not
+   by being loud. A saturated red panel did draw the eye, but it read as an
+   advert — and an advert is the one thing a player will learn to skip. So this
+   is a pale blush wash with dark text, the same ink as the surrounding copy: a
+   quiet card that plainly isn't part of the page around it. The red survives at
+   full strength only in the hairline border and the link, where a little of it
+   goes a long way.
 
    Behind the text, soft circles roam around the box. They are heavily blurred
-   and semi-transparent, so even moving a good distance they read as colour
-   shifting under the surface rather than as shapes crossing the copy. Size,
-   position, tint, travel distance and speed all come in as custom properties
-   from the markup, since CSS cannot vary them per element.
+   and barely-there, so the effect is a faint warmth moving under the surface —
+   something you notice out of the corner of your eye and then stop seeing.
+   Size, position, tint, travel distance and speed all come in as custom
+   properties from the markup, since CSS cannot vary them per element.
 
    Everything decorative is clipped by `overflow: hidden` and sits under the
    text on `z-index: 0`. Under prefers-reduced-motion the circles stop where
@@ -1306,15 +1309,15 @@ details.expand > summary:hover { color: var(--brand-deep); }
   margin: 1.6rem 0;
   padding: 1.15rem 1.35rem;
   border-radius: var(--r-card);
-  /* The blue is the frame, not the fill. Inset ring doubles it up so the edge
-     still reads at a glance on a busy red background. */
-  border: 2px solid #4a7bf0;
-  box-shadow: 0 8px 24px rgba(90, 20, 45, 0.32), inset 0 0 0 1px rgba(120, 160, 255, 0.35);
-  /* Red throughout: a lighter scarlet top-left falling away to deep crimson. */
+  /* One hairline of real red is enough to frame it now that the fill is pale. */
+  border: 1px solid rgba(190, 60, 85, 0.3);
+  box-shadow: 0 4px 14px rgba(120, 45, 60, 0.07);
+  /* A blush wash — warm enough to separate from the white card, light enough to
+     take the page's own ink on top. */
   background:
-    radial-gradient(90% 130% at 12% 0%, rgba(255, 106, 116, 0.5) 0%, rgba(255, 106, 116, 0) 60%),
-    linear-gradient(125deg, #d02444 0%, #ab1739 42%, #8a1030 72%, #6f0c26 100%);
-  color: rgba(255, 255, 255, 0.95);
+    radial-gradient(95% 130% at 12% 0%, rgba(255, 175, 180, 0.3) 0%, rgba(255, 175, 180, 0) 62%),
+    linear-gradient(125deg, #fff6f7 0%, #ffeef1 48%, #fdeae1 100%);
+  color: var(--ink-soft);
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.55;
@@ -1323,25 +1326,26 @@ details.expand > summary:hover { color: var(--brand-deep); }
 
 .archive-nudge:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 30px rgba(90, 20, 45, 0.42), inset 0 0 0 1px rgba(150, 185, 255, 0.5);
+  box-shadow: 0 8px 20px rgba(120, 45, 60, 0.11);
 }
 
 /* Text sits above the drifting circles. */
 .archive-nudge > * { position: relative; z-index: 1; }
 
-.archive-nudge strong { color: #ffffff; }
+.archive-nudge strong { color: var(--ink); }
 
+/* The link carries the colour the background gave up. */
 .archive-nudge a {
-  color: #ffffff;
+  color: #b3253f;
   text-decoration: underline;
   text-decoration-thickness: 2px;
-  text-decoration-color: rgba(255, 255, 255, 0.5);
+  text-decoration-color: rgba(179, 37, 63, 0.35);
   text-underline-offset: 2px;
 }
 
 .archive-nudge a:hover {
-  color: #ffffff;
-  text-decoration-color: #ffffff;
+  color: #8f1b32;
+  text-decoration-color: #8f1b32;
 }
 
 .archive-nudge__field {
@@ -1354,8 +1358,8 @@ details.expand > summary:hover { color: var(--brand-deep); }
 /* -- drifting circles ------------------------------------------------------- */
 
 /* A blurred radial fill rather than a flat disc, so there is no hard edge to
-   catch the eye — at this blur radius each one is a bloom of colour, not a
-   circle you would think to count. */
+   catch the eye — at this blur radius and this opacity each one is a suggestion
+   of warmth, not a circle you would think to count. */
 .archive-nudge__orb {
   position: absolute;
   top: var(--y);
@@ -1364,7 +1368,7 @@ details.expand > summary:hover { color: var(--brand-deep); }
   height: var(--size);
   border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, var(--tint) 0%, transparent 70%);
-  filter: blur(8px);
+  filter: blur(14px);
   opacity: var(--alpha, 0.5);
   /* `alternate` so each one retraces its path instead of snapping home at the
      end of the cycle — with four waypoints out and four back, the route is long
@@ -1372,20 +1376,21 @@ details.expand > summary:hover { color: var(--brand-deep); }
   animation: archive-drift var(--dur) ease-in-out var(--delay) infinite alternate;
 }
 
-/* Both axes move independently and the scale swings with them, so a circle
-   grows as it crosses and shrinks as it retreats — much more sense of travel
-   than sliding a fixed disc from A to B. */
+/* Both axes move independently and the scale swings gently with them, so a
+   circle grows as it crosses and shrinks as it retreats — more sense of travel
+   than sliding a fixed disc from A to B, without any single moment of change
+   being large enough to catch the eye. */
 @keyframes archive-drift {
   0% { transform: translate(0, 0) scale(1); }
-  30% { transform: translate(var(--dx), var(--dy)) scale(1.2); }
+  30% { transform: translate(var(--dx), var(--dy)) scale(1.1); }
   55% {
-    transform: translate(calc(var(--dx) * 0.25), calc(var(--dy) * 1.5)) scale(1.05);
+    transform: translate(calc(var(--dx) * 0.25), calc(var(--dy) * 1.4)) scale(1.02);
   }
   78% {
-    transform: translate(calc(var(--dx) * -0.7), calc(var(--dy) * 0.5)) scale(1.16);
+    transform: translate(calc(var(--dx) * -0.7), calc(var(--dy) * 0.5)) scale(1.08);
   }
   100% {
-    transform: translate(calc(var(--dx) * -1), calc(var(--dy) * -0.9)) scale(0.9);
+    transform: translate(calc(var(--dx) * -1), calc(var(--dy) * -0.9)) scale(0.95);
   }
 }
 

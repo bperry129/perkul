@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 /**
- * The "not done playing?" panel — a red card with a blue border and soft
- * circles roaming behind the text.
+ * The "not done playing?" panel — a pale blush card with a red hairline border
+ * and soft circles roaming behind the text.
  *
  * Shared by the played-today homepage and the results page, which is the whole
  * reason it is a component: both appear at the moment a player has just been
@@ -21,24 +21,26 @@ import Link from 'next/link';
  *
  * Each one gets a position, a diameter, a tint, and a `dx`/`dy` it travels by.
  * They are large and heavily blurred by the CSS, so most sit partly outside the
- * box and only their bloom shows; the point is colour moving under the text, not
- * shapes crossing it. That blur is also what lets them travel this far — 70–130px
- * over 7–13s is real movement, but with no hard edge to track it still reads as
- * the background churning rather than objects flying past. Durations are prime-ish
- * and unrelated, so the panel never settles into a visible loop.
+ * box and only their bloom shows. On a pale background the opacities have to be
+ * very low — 0.1–0.2, against 0.4–0.55 when the panel was saturated — or the
+ * blooms turn into visible blobs sliding behind the words. What is left is a
+ * faint shift in warmth, closer to light moving across a surface than to
+ * animation.
  *
- * Tints are blue and pale on a red ground: the reds that were here before are
- * now invisible against the gradient, and the blue ties the motion to the border.
+ * Travel stays generous (60–90px) but the cycles are slower again (11–19s), and
+ * the durations are unrelated to each other so the panel never settles into a
+ * visible loop. Tints are rose and apricot with one cool blue for depth; pure
+ * white would do nothing here, since the background is already nearly white.
  */
 const ORBS = [
-  { x: '-8%', y: '-45%', size: '130px', tint: 'rgba(74, 123, 240, 0.95)', alpha: 0.55, dx: '96px', dy: '54px', dur: '9s', delay: '0s' },
-  { x: '20%', y: '30%', size: '78px', tint: 'rgba(130, 175, 255, 0.85)', alpha: 0.45, dx: '-88px', dy: '-46px', dur: '11s', delay: '0.7s' },
-  { x: '42%', y: '-30%', size: '96px', tint: 'rgba(58, 100, 225, 0.85)', alpha: 0.42, dx: '74px', dy: '68px', dur: '13s', delay: '1.6s' },
-  { x: '55%', y: '42%', size: '112px', tint: 'rgba(96, 140, 250, 0.9)', alpha: 0.5, dx: '-104px', dy: '-58px', dur: '10s', delay: '0.3s' },
-  { x: '76%', y: '-22%', size: '88px', tint: 'rgba(150, 190, 255, 0.8)', alpha: 0.44, dx: '82px', dy: '72px', dur: '8s', delay: '2.2s' },
-  { x: '90%', y: '48%', size: '134px', tint: 'rgba(70, 118, 235, 0.9)', alpha: 0.46, dx: '-92px', dy: '-64px', dur: '12s', delay: '1.1s' },
-  // A pale bloom, faster than the rest, to keep the middle from going flat.
-  { x: '32%', y: '-12%', size: '70px', tint: 'rgba(255, 255, 255, 0.6)', alpha: 0.26, dx: '112px', dy: '40px', dur: '7s', delay: '2.8s' },
+  { x: '-8%', y: '-45%', size: '130px', tint: 'rgba(226, 88, 112, 0.55)', alpha: 0.2, dx: '74px', dy: '42px', dur: '15s', delay: '0s' },
+  { x: '20%', y: '30%', size: '78px', tint: 'rgba(240, 140, 120, 0.5)', alpha: 0.16, dx: '-68px', dy: '-36px', dur: '17s', delay: '0.9s' },
+  { x: '42%', y: '-30%', size: '96px', tint: 'rgba(214, 70, 96, 0.5)', alpha: 0.14, dx: '62px', dy: '58px', dur: '19s', delay: '2.1s' },
+  { x: '55%', y: '42%', size: '112px', tint: 'rgba(232, 104, 128, 0.5)', alpha: 0.18, dx: '-84px', dy: '-46px', dur: '14s', delay: '0.4s' },
+  { x: '76%', y: '-22%', size: '88px', tint: 'rgba(244, 156, 128, 0.5)', alpha: 0.15, dx: '66px', dy: '60px', dur: '12s', delay: '2.6s' },
+  { x: '90%', y: '48%', size: '134px', tint: 'rgba(220, 80, 104, 0.5)', alpha: 0.17, dx: '-76px', dy: '-52px', dur: '18s', delay: '1.3s' },
+  // One cool bloom so the warmth has something to sit against.
+  { x: '32%', y: '-12%', size: '70px', tint: 'rgba(120, 150, 230, 0.45)', alpha: 0.1, dx: '88px', dy: '32px', dur: '11s', delay: '3.2s' },
 ] as const;
 
 export function ArchiveNudge({
