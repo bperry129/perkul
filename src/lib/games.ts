@@ -86,6 +86,66 @@ export const getTodaysGame = cache(async (): Promise<GameRecord | null> => {
   return game;
 });
 
+/* -------------------------------------------------------------------------- */
+/* The archive — every past day, replayable for fun                            */
+/* -------------------------------------------------------------------------- */
+
+export type ArchiveGameRow = {
+  id: string;
+  gameNumber: number;
+  activeDate: string;
+};
+
+/**
+ * Every published game whose day has already passed, newest first.
+ *
+ * This is the archive catalogue. It needs no maintenance: because the cut-off is
+ * computed from the New York date at request time, yesterday's game joins the
+ * list by itself at midnight.
+ */
+export async function listArchiveGames(): Promise<ArchiveGameRow[]> {
+  const { data, error } = await serviceClient()
+    .from('games')
+    .select('id, game_number, active_date')
+    .eq('status', 'published')
+    .lt('active_date', nyDateString())
+    .order('active_date', { ascending: false });
+
+  if (error) {
+    logLookupFailure('listArchiveGames', error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    gameNumber: row.game_number as number,
+    activeDate: row.active_date as string,
+  }));
+}
+
+/**
+ * A past published game by date, with rounds, for unranked replay.
+ * Returns null for today, the future, or anything unpublished — so a guessed URL
+ * can never be used to read a puzzle before it goes live.
+ */
+export async function getArchiveGameByDate(activeDate: string): Promise<GameRecord | null> {
+  const game = await getGameByDateWithRounds(activeDate);
+  if (!game) return null;
+  if (game.status !== 'published') return null;
+  if (game.active_date >= nyDateString()) return null;
+  return game;
+}
+
+/** Same guarantee as getArchiveGameByDate, keyed by id — used when a replay starts. */
+export async function getArchiveGameById(gameId: string): Promise<GameRecord | null> {
+  const game = await getGameWithRounds(gameId);
+  if (!game) return null;
+  if (game.status !== 'published') return null;
+  if (game.active_date >= nyDateString()) return null;
+  return game;
+}
+
+
 export type DatabaseProbe =
   | { ok: true }
   | { ok: false; reason: 'unreachable' | 'schema_missing'; detail: string };

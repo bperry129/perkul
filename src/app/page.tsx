@@ -5,7 +5,7 @@ import { GameClient } from '@/components/GameClient';
 import { Countdown } from '@/components/Countdown';
 import { BRAND, gameLabel } from '@/lib/brand';
 import { isSupabaseConfigured } from '@/lib/supabase/admin';
-import { getTodaysGame, gameSummary, probeDatabase } from '@/lib/games';
+import { getTodaysGame, gameSummary, listArchiveGames, probeDatabase } from '@/lib/games';
 import { findAttemptForIdentity, getActiveAttempt, getChallengeInfo } from '@/lib/attempts';
 import { getIdentity } from '@/lib/auth';
 import { flagEnabled } from '@/lib/flags';
@@ -223,6 +223,7 @@ export default async function HomePage({
     const correct = existing.correct_count ?? 0;
     const elapsedMs = existing.elapsed_ms ?? 0;
     const onTheBoard = existing.is_ranked && existing.integrity_status === 'valid';
+    const archiveCount = (await listArchiveGames()).length;
 
     return (
       <>
@@ -244,13 +245,26 @@ export default async function HomePage({
             : 'That run was unranked, so it is not on the public leaderboard. The next ranked game unlocks at midnight New York.'}
         </p>
 
+        {/* The whole point of the archive: "come back tomorrow" is a poor answer
+            to someone who wants to keep playing right now. */}
+        <div className="notice" style={{ marginTop: '1.6rem' }}>
+          <strong>Not done playing?</strong> Every previous puzzle is still available in the{' '}
+          <Link href="/archive">puzzle archive</Link> —{' '}
+          {archiveCount > 0 ? `${archiveCount} past games` : 'past games'} you can play right now,
+          just for fun. They never affect the leaderboard or your streak, but they do count in your
+          statistics.
+        </div>
+
         <div className="toolbar" style={{ marginTop: '1.6rem' }}>
-          <Link className="action" href={`/results/${existing.id}`}>
+          <Link className="action" href="/archive">
+            Play a past puzzle
+          </Link>
+          <Link className="action action--ghost" href={`/results/${existing.id}`}>
             See my full result
           </Link>
           {/* Plain <a>: a client-side navigation can be served a cached RSC
               payload of the board, and this one is live data. */}
-          <a className="action action--ghost" href="/leaderboard">
+          <a className="action--quiet" href="/leaderboard">
             Today's leaderboard
           </a>
           <Link className="action--quiet" href="/stats">

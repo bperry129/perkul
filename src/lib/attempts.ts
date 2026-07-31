@@ -2,6 +2,7 @@ import 'server-only';
 import { serviceClient } from './supabase/admin';
 import {
   buildOptionOrder,
+  getArchiveGameById,
   getGameWithRounds,
   getTodaysGame,
   isLive,
@@ -102,6 +103,34 @@ export async function findAttemptForIdentity(
   );
 }
 
+/**
+ * The newest unfinished UNRANKED attempt on one specific game.
+ *
+ * Archive replays are unlimited, so this deliberately does not reuse
+ * findAttemptForIdentity — that one prefers the ranked row and would happily
+ * return a finished replay. This exists only so refreshing mid-replay restores
+ * the running clock instead of quietly starting a second attempt.
+ */
+async function findOpenArchiveAttempt(
+  gameId: string,
+  identity: Identity,
+): Promise<AttemptRow | null> {
+  if (!identity.userId && !identity.anonId) return null;
+  let query = serviceClient()
+    .from('attempts')
+    .select(ATTEMPT_COLUMNS)
+    .eq('game_id', gameId)
+    .eq('is_simulated', false)
+    .eq('is_ranked', false)
+    .eq('completion_status', 'in_progress')
+    .order('started_at', { ascending: false })
+    .limit(1);
+  query = identityFilter(query as never, identity);
+  const { data } = await query;
+  const rows = (data ?? []) as unknown as AttemptRow[];
+  return rows[0] ?? null;
+}
+
 export async function getAttempt(attemptId: string): Promise<AttemptRow | null> {
   const { data } = await serviceClient()
     .from('attempts')
@@ -166,15 +195,37 @@ export async function startAttempt(
   options: { gameId?: string | null; allowPractice?: boolean } = {},
 ): Promise<Outcome<{ payload: ActiveAttemptPayload }>> {
   const game = await getTodaysGame();
+
+  /*
+   * ARCHIVE REPLAY. A gameId that isn't today's may still be a published past
+   * day, which anyone may replay purely for fun. These attempts are always
+   * unranked, are never blocked by an earlier completion, and may be replayed
+   * without limit — the two unique indexes on attempts are partial
+   * (`where is_ranked`), so repeated unranked rows are legal.
+   *
+   * getArchiveGameById refuses today and the future, so a guessed id cannot be
+   * used to read a puzzle early.
+   */
+  if (options.gameId && (!game || options.gameId !== game.id)) {
+    const archive = await getArchiveGameById(options.gameId);
+    if (!archive) {
+      return {
+        ok: false,
+        code: 'expired',
+        message: 'That puzzle is not available to play.',
+      };
+    }
+    if (!identity.userId && !identity.anonId) {
+      return { ok: false, code: 'no_identity', message: 'Could not establish a play session.' };
+    }
+    // Restore an unfinished replay rather than starting a second clock.
+    const open = await findOpenArchiveAttempt(archive.id, identity);
+    if (open) return { ok: true, payload: await publicPayload(open, archive) };
+    return createAttempt(identity, archive, { ranked: false });
+  }
+
   if (!game) {
     return { ok: false, code: 'no_game', message: 'No game is published for today.' };
-  }
-  if (options.gameId && options.gameId !== game.id) {
-    return {
-      ok: false,
-      code: 'expired',
-      message: 'That puzzle is no longer today’s game.',
-    };
   }
   if (!identity.userId && !identity.anonId) {
     return { ok: false, code: 'no_identity', message: 'Could not establish a play session.' };
@@ -228,9 +279,16 @@ async function createAttempt(
     .single();
 
   if (error || !data) {
-    // Unique index tripped => a concurrent start. Return the existing attempt.
-    const existing = await findAttemptForIdentity(game.id, identity);
-    if (existing) return { ok: true, payload: await publicPayload(existing, game) };
+    /*
+     * Unique index tripped => a concurrent start. Only meaningful for ranked
+     * play: the indexes are partial (`where is_ranked`), so an unranked archive
+     * insert cannot collide, and resuming here would hand back an unrelated
+     * finished replay.
+     */
+    if (opts.ranked) {
+      const existing = await findAttemptForIdentity(game.id, identity);
+      if (existing) return { ok: true, payload: await publicPayload(existing, game) };
+    }
     return { ok: false, code: 'start_failed', message: 'Could not start the game. Try again.' };
   }
 
@@ -856,6 +914,78 @@ export async function getPlayerHistory(userId: string, limit = 30): Promise<Hist
       isRanked: Boolean(row.is_ranked),
     };
   });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Archive play — counted for the player, never for the ladder                 */
+/* -------------------------------------------------------------------------- */
+
+export type ArchiveStats = {
+  played: number;
+  distinctGames: number;
+  perfect: number;
+  totalCorrect: number;
+  totalRounds: number;
+  bestScore: number | null;
+};
+
+/**
+ * Counters for a player's archive (unranked) games.
+ *
+ * Kept deliberately separate from player_lifetime_stats, which filters on
+ * `is_ranked` — archive play must never move a lifetime average, an accuracy
+ * figure or a streak. It is its own scoreboard, shown in its own section.
+ */
+export async function getArchiveStats(userId: string): Promise<ArchiveStats> {
+  const { data } = await serviceClient()
+    .from('attempts')
+    .select('game_id, correct_count, rounds_total, elapsed_ms')
+    .eq('user_id', userId)
+    .eq('is_ranked', false)
+    .eq('is_simulated', false)
+    .not('completed_at', 'is', null);
+
+  const rows = (data ?? []) as Array<{
+    game_id: string;
+    correct_count: number | null;
+    rounds_total: number | null;
+    elapsed_ms: number | null;
+  }>;
+
+  const empty: ArchiveStats = {
+    played: 0,
+    distinctGames: 0,
+    perfect: 0,
+    totalCorrect: 0,
+    totalRounds: 0,
+    bestScore: null,
+  };
+  if (!rows.length) return empty;
+
+  let totalCorrect = 0;
+  let totalRounds = 0;
+  let perfect = 0;
+  let bestScore = 0;
+  const games = new Set<string>();
+
+  for (const row of rows) {
+    const correct = row.correct_count ?? 0;
+    const rounds = row.rounds_total ?? 10;
+    totalCorrect += correct;
+    totalRounds += rounds;
+    if (correct === rounds) perfect += 1;
+    games.add(row.game_id);
+    bestScore = Math.max(bestScore, perkulScore(correct, row.elapsed_ms ?? 0));
+  }
+
+  return {
+    played: rows.length,
+    distinctGames: games.size,
+    perfect,
+    totalCorrect,
+    totalRounds,
+    bestScore,
+  };
 }
 
 /* -------------------------------------------------------------------------- */

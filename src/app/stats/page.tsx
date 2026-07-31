@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getSessionUser } from '@/lib/supabase/server';
 import { serviceClient } from '@/lib/supabase/admin';
-import { getPlayerHistory } from '@/lib/attempts';
+import { getArchiveStats, getPlayerHistory } from '@/lib/attempts';
 import { computeStreaks } from '@/lib/scoring';
 import { gradeFor } from '@/lib/grades';
 import { formatElapsed, formatGameDateShort, nyDateString } from '@/lib/time';
@@ -41,6 +41,7 @@ export default async function StatsPage() {
     | undefined;
 
   const history = await getPlayerHistory(user.id, 30);
+  const archive = await getArchiveStats(user.id);
 
   const rankedDates = history.filter((h) => h.isRanked).map((h) => h.activeDate);
   const streaks = computeStreaks(rankedDates, nyDateString());
@@ -76,6 +77,50 @@ export default async function StatsPage() {
           label="Best 10/10"
         />
       </div>
+
+      {/* ARCHIVE PLAY — its own scoreboard.
+          Deliberately separate from the figures above: those come from
+          player_lifetime_stats, which filters on is_ranked, so nothing here can
+          move a lifetime average, an accuracy figure or a streak. */}
+      <h2 className="admin-title" style={{ fontSize: '1.3rem', marginTop: '2.5rem' }}>
+        Archive games
+      </h2>
+      <p className="label">
+        Past puzzles you played for fun. These never count towards the leaderboard, your streak or
+        the figures above.
+      </p>
+
+      {archive.played === 0 ? (
+        <p className="standfirst" style={{ marginTop: '0.8rem' }}>
+          You have not played any past puzzles yet. There are{' '}
+          <Link href="/archive">dozens waiting in the archive</Link> — pick any day you like.
+        </p>
+      ) : (
+        <>
+          <div className="stat-grid" style={{ marginTop: '1rem' }}>
+            <Stat value={String(archive.played)} label="Archive games played" />
+            <Stat value={String(archive.distinctGames)} label="Different days" />
+            <Stat value={String(archive.perfect)} label="Perfect archive runs" />
+            <Stat
+              value={
+                archive.totalRounds > 0
+                  ? `${((archive.totalCorrect / archive.totalRounds) * 100).toFixed(1)}%`
+                  : '—'
+              }
+              label="Archive accuracy"
+            />
+            <Stat
+              value={archive.bestScore != null ? archive.bestScore.toLocaleString() : '—'}
+              label="Best archive score"
+            />
+          </div>
+          <div className="toolbar" style={{ marginTop: '1.2rem' }}>
+            <Link className="action action--ghost" href="/archive">
+              Play another past puzzle
+            </Link>
+          </div>
+        </>
+      )}
 
       <h2 className="admin-title" style={{ fontSize: '1.3rem', marginTop: '2.5rem' }}>
         Recent games

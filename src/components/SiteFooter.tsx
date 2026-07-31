@@ -14,6 +14,7 @@ export function SiteFooter() {
         <span>
           {BRAND.name} · {new Date().getFullYear()}
         </span>
+        <Link href="/archive">Past Puzzles</Link>
         <Link href="/how-to-play">How to Play</Link>
         <Link href="/word-policy">Word Policy</Link>
         <Link href="/privacy">Privacy</Link>

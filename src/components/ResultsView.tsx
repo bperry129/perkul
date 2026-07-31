@@ -389,7 +389,16 @@ export function ResultsView({
 
       {/* Challenge CTA — the main viral sharing hook. Prominent, before the
           generic share button. Only shown for ranked attempts (not practice). */}
-      <ChallengeBlock result={result} />
+        <ChallengeBlock result={result} />
+
+        {/* The archive is the only thing left to play once the daily game is
+            done, so it is offered here rather than buried in the footer. Shown
+            for practice runs too — someone replaying today clearly wants more. */}
+        <div className="notice" style={{ marginTop: '1.5rem' }}>
+          <strong>Want another one right now?</strong> Play any previous day&apos;s puzzle in the{' '}
+          <a href="/archive">puzzle archive</a>. Archive games are just for fun — they never touch
+          the leaderboard or your streak, but they do count in your statistics.
+        </div>
 
       {sharingEnabled ? <ShareBlock result={result} /> : null}
 
