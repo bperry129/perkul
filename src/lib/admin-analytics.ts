@@ -1,7 +1,129 @@
 import 'server-only';
 import { serviceClient } from './supabase/admin';
 import { flagEnabled } from './flags';
-import { nyDateString, addDays } from './time';
+import { nyDateString, addDays, diffDays, nyMidnightInstant, formatGameDate, formatGameDateShort } from './time';
+
+/* -------------------------------------------------------------------------- */
+/* Date ranges                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export type RangePreset = 'today' | 'yesterday' | 'last7' | 'last30' | 'custom';
+
+/**
+ * An inclusive span of New York calendar dates, plus a label for the page.
+ * `days` is the length, which is what the previous comparable period is built
+ * from — "past 7 days" is always compared with the 7 days immediately before it.
+ */
+export type DateRange = {
+  preset: RangePreset;
+  start: string;
+  end: string;
+  days: number;
+  label: string;
+};
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function validDate(value: string | undefined | null): string | null {
+  if (!value || !DATE_PATTERN.test(value)) return null;
+  return Number.isNaN(Date.parse(`${value}T00:00:00Z`)) ? null : value;
+}
+
+function span(start: string, end: string): { start: string; end: string; days: number } {
+  // Tolerate a backwards custom range rather than returning nothing.
+  const [from, to] = diffDays(start, end) < 0 ? [end, start] : [start, end];
+  return { start: from, end: to, days: diffDays(from, to) + 1 };
+}
+
+function rangeLabel(start: string, end: string, days: number, today: string): string {
+  if (days === 1) return start === today ? 'Today' : formatGameDate(start);
+  return `${formatGameDateShort(start)} – ${formatGameDateShort(end)}`;
+}
+
+/**
+ * Turn `?range=`/`?from=`/`?to=` into a concrete span. Anything unrecognised or
+ * malformed falls back to today, so a hand-edited URL can never 500 the page.
+ *
+ * Presets are inclusive of today: "past 7 days" means today and the six before
+ * it, which is what an operator reading the dashboard at 9pm expects to see.
+ */
+export function resolveRange(params: {
+  range?: string;
+  from?: string;
+  to?: string;
+} = {}): DateRange {
+  const today = nyDateString();
+  const from = validDate(params.from);
+  const to = validDate(params.to);
+
+  // Explicit dates win over a preset, and one date alone means that single day.
+  if (from || to) {
+    const s = span(from ?? to!, to ?? from!);
+    return {
+      preset: 'custom',
+      ...s,
+      label: rangeLabel(s.start, s.end, s.days, today),
+    };
+  }
+
+  const preset = (params.range ?? 'today') as RangePreset;
+
+  switch (preset) {
+    case 'yesterday': {
+      const day = addDays(today, -1);
+      return { preset, start: day, end: day, days: 1, label: 'Yesterday' };
+    }
+    case 'last7': {
+      const start = addDays(today, -6);
+      return { preset, start, end: today, days: 7, label: 'Past 7 days' };
+    }
+    case 'last30': {
+      const start = addDays(today, -29);
+      return { preset, start, end: today, days: 30, label: 'Past 30 days' };
+    }
+    default:
+      return { preset: 'today', start: today, end: today, days: 1, label: 'Today' };
+  }
+}
+
+/** The equally long span ending the day before `range` starts. */
+export function previousRange(range: DateRange): DateRange {
+  const end = addDays(range.start, -1);
+  const start = addDays(end, -(range.days - 1));
+  const today = nyDateString();
+  return {
+    preset: 'custom',
+    start,
+    end,
+    days: range.days,
+    label:
+      range.days === 1
+        ? `vs ${rangeLabel(start, end, 1, today)}`
+        : `vs previous ${range.days} days`,
+  };
+}
+
+/** Signed percentage change, or null when there is no baseline to compare to. */
+export function percentChange(current: number, prior: number): number | null {
+  if (prior === 0) return null;
+  return ((current - prior) / prior) * 100;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dashboard                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/** Everything measured over a chosen span of days. Real players only. */
+export type RangeMetrics = {
+  starts: number;
+  completions: number;
+  completionRate: number | null;
+  avgCorrect: number | null;
+  medianElapsedMs: number | null;
+  guestAttempts: number;
+  accountAttempts: number;
+  newRegistrations: number;
+};
 
 /** Numbers an operator actually needs to run the game day to day. */
 export type DashboardSummary = {
@@ -11,21 +133,107 @@ export type DashboardSummary = {
   publishedFuture: number;
   runwayDays: number;
   lastScheduledDate: string | null;
-  startsToday: number;
-  completionsToday: number;
-  completionRate: number | null;
-  avgCorrect: number | null;
-  medianElapsedMs: number | null;
-  registeredPlayers: number;
-  anonymousPlayersToday: number;
+  /** The span being reported on, and the one it is measured against. */
+  range: DateRange;
+  previous: DateRange;
+  current: RangeMetrics;
+  prior: RangeMetrics;
+  /** Lifetime totals, which no date range applies to. */
+  registeredPlayersTotal: number;
   simulatedAttempts: number;
 };
 
-export async function getDashboardSummary(): Promise<DashboardSummary> {
+type AttemptStatRow = {
+  user_id: string | null;
+  completed_at: string | null;
+  correct_count: number | null;
+  elapsed_ms: number | null;
+  is_ranked: boolean;
+  integrity_status: string;
+};
+
+/**
+ * Metrics for one span.
+ *
+ * Two deliberate decisions here.
+ *
+ * Simulated rows are excluded unconditionally — no flag, no argument. The
+ * `simulated_data` flag exists to pad the *public* leaderboard, and this
+ * dashboard is the one place in the app that must never be told that story:
+ * "531 guests today" was 531 dummies. The count of fake rows is reported
+ * separately, as its own lifetime figure, so it is visible but never mixed in.
+ *
+ * Attempts are bucketed by when they were *started* (`created_at` inside the New
+ * York window), not by which game they belong to. That means an archive play of
+ * game #210 lands on the day somebody actually played it, which is what a
+ * question like "how did last week go?" is really asking. Ranked metrics still
+ * filter on `is_ranked`, so archive plays cannot skew accuracy or completions.
+ */
+async function metricsForRange(range: DateRange): Promise<RangeMetrics> {
+  const db = serviceClient();
+  const startInstant = nyMidnightInstant(range.start).toISOString();
+  const endInstant = nyMidnightInstant(addDays(range.end, 1)).toISOString();
+
+  const { data: attemptData } = await db
+    .from('attempts')
+    .select('user_id, completed_at, correct_count, elapsed_ms, is_ranked, integrity_status')
+    .eq('is_simulated', false)
+    .gte('created_at', startInstant)
+    .lt('created_at', endInstant)
+    .limit(50_000);
+
+  const rows = (attemptData ?? []) as AttemptStatRow[];
+
+  const starts = rows.length;
+  const guestAttempts = rows.filter((r) => !r.user_id).length;
+  const accountAttempts = starts - guestAttempts;
+
+  // "Completed" means a finished, ranked, non-flagged attempt — the same bar the
+  // leaderboard uses, so the completion rate matches what players can see.
+  const completed = rows.filter(
+    (r) => r.completed_at && r.is_ranked && r.integrity_status === 'valid',
+  );
+
+  const correct = completed
+    .map((r) => Number(r.correct_count ?? 0))
+    .filter((n) => Number.isFinite(n));
+  const times = completed
+    .map((r) => Number(r.elapsed_ms))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .sort((a, b) => a - b);
+
+  const median =
+    times.length === 0
+      ? null
+      : times.length % 2 === 1
+        ? times[(times.length - 1) / 2]
+        : (times[times.length / 2 - 1] + times[times.length / 2]) / 2;
+
+  const { count: newRegistrations } = await db
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startInstant)
+    .lt('created_at', endInstant);
+
+  return {
+    starts,
+    completions: completed.length,
+    completionRate: starts > 0 ? (completed.length / starts) * 100 : null,
+    avgCorrect: correct.length > 0 ? correct.reduce((a, b) => a + b, 0) / correct.length : null,
+    medianElapsedMs: median,
+    guestAttempts,
+    accountAttempts,
+    newRegistrations: newRegistrations ?? 0,
+  };
+}
+
+export async function getDashboardSummary(
+  range: DateRange = resolveRange(),
+): Promise<DashboardSummary> {
   const db = serviceClient();
   const today = nyDateString();
   const tomorrow = addDays(today, 1);
-  const includeSimulated = await flagEnabled('simulated_data');
+  const previous = previousRange(range);
 
   const { data: games } = await db
     .from('games')
@@ -48,31 +256,10 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     .order('active_date', { ascending: false });
   const futureDates = ((published ?? []) as Array<{ active_date: string }>).map((r) => r.active_date);
 
-  type DailyStatsRow = {
-    completions: number;
-    avg_correct: number | null;
-    median_elapsed_ms: number | null;
-    registered: number;
-    anonymous: number;
-  };
-
-  let stats: DailyStatsRow | null = null;
-
-  if (todayGame) {
-    const { data } = await db.rpc('daily_stats', {
-      p_game_id: todayGame.id,
-      p_include_simulated: includeSimulated,
-    });
-    stats = ((Array.isArray(data) ? data[0] : data) ?? null) as DailyStatsRow | null;
-  }
-
-  const startsQuery = todayGame
-    ? await db
-        .from('attempts')
-        .select('id', { count: 'exact', head: true })
-        .eq('game_id', todayGame.id)
-        .eq('is_simulated', false)
-    : { count: 0 };
+  const [current, prior] = await Promise.all([
+    metricsForRange(range),
+    metricsForRange(previous),
+  ]);
 
   const { count: registeredPlayers } = await db
     .from('profiles')
@@ -82,9 +269,6 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     .from('attempts')
     .select('id', { count: 'exact', head: true })
     .eq('is_simulated', true);
-
-  const starts = startsQuery.count ?? 0;
-  const completions = Number(stats?.completions ?? 0);
 
   return {
     today,
@@ -97,16 +281,15 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     publishedFuture: futureDates.length,
     runwayDays: futureDates.length,
     lastScheduledDate: futureDates[0] ?? null,
-    startsToday: starts,
-    completionsToday: completions,
-    completionRate: starts > 0 ? (completions / starts) * 100 : null,
-    avgCorrect: stats?.avg_correct != null ? Number(stats.avg_correct) : null,
-    medianElapsedMs: stats?.median_elapsed_ms != null ? Number(stats.median_elapsed_ms) : null,
-    registeredPlayers: registeredPlayers ?? 0,
-    anonymousPlayersToday: Number(stats?.anonymous ?? 0),
+    range,
+    previous,
+    current,
+    prior,
+    registeredPlayersTotal: registeredPlayers ?? 0,
     simulatedAttempts: simulatedAttempts ?? 0,
   };
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* Round-level analytics                                                       */

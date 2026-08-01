@@ -1120,6 +1120,7 @@ details.expand > summary:hover { color: var(--brand-deep); }
 .field input[type='email'],
 .field input[type='number'],
 .field input[type='password'],
+.field input[type='date'],
 .field select,
 .field textarea {
   width: 100%;
@@ -1240,6 +1241,23 @@ details.expand > summary:hover { color: var(--brand-deep); }
 .pill[data-tone='live'] { background: var(--yellow-tint); color: var(--ink); }
 .pill[data-tone='published'] { background: var(--brand-tint); color: var(--brand-dark); }
 .pill[data-tone='draft'], .pill[data-tone='needs_review'] { color: var(--gray); }
+
+/* Period-on-period movement under a dashboard metric. Colour is keyed to
+   good/bad rather than up/down — a falling median time is an improvement, so
+   the page passes higherIsBetter=false and gets green for a downward arrow. */
+.metric-delta {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--gray);
+}
+
+.metric-delta[data-dir='up'] { color: var(--hit); }
+.metric-delta[data-dir='down'] { color: var(--miss); }
+.metric-delta[data-dir='flat'] { color: var(--gray-light); }
 
 .issue { font-size: 0.85rem; padding: 0.3rem 0; color: var(--ink-soft); }
 .issue[data-level='error'] { color: var(--miss); }
