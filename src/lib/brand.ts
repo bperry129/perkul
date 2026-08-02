@@ -11,7 +11,8 @@ export const BRAND = {
    * here: a legal page promising to answer an address nobody reads is worse
    * than having no address, and three hard-coded copies is how that happens.
    */
-  email: 'info@contact.perkul.com',
+  email: 'info@perkul.com',
+
 
   internalCodename: 'FALSE',
   tagline: 'One of these words isn’t real.',
