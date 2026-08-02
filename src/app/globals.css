@@ -139,6 +139,29 @@ code {
   padding: 0.08em 0.35em;
 }
 
+/* A dark snippet block (copy-paste embed code, CLI examples). The global
+   `code` rule above sets a light background meant for an inline mention like
+   `YOUR_KEY` sitting in body copy — inside a dark <pre> that same light
+   background fights the white text and makes the snippet unreadable. Reset it
+   here rather than overriding `code` globally. */
+.code-block {
+  background: var(--panel);
+  color: #fff;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.code-block code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+
 /* ---------------------------------------------------------------- layout -- */
 
 .shell {

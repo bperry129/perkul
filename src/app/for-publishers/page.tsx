@@ -114,24 +114,13 @@ export default function ForPublishersPage() {
 
       <h2 id="snippet">The snippet</h2>
       <p>Paste this once, anywhere in your page template or a single article body:</p>
-      <pre
-        style={{
-          background: 'var(--panel)',
-          color: '#fff',
-          padding: '1rem',
-          borderRadius: '0.5rem',
-          overflowX: 'auto',
-          fontSize: '0.82rem',
-        }}
-      >
+      <pre className="code-block">
         <code>{scriptSnippet}</code>
       </pre>
       <p>
-        Replace <code>YOUR_KEY</code> with the embed key we issue you.{' '}
-        <a href={`mailto:${BRAND.email}?subject=Perkul%20widget%20key`}>
-          Email us for a key
-        </a>{' '}
-        — we'll also need the exact domain(s) the widget will run on.
+        Replace <code>YOUR_KEY</code> with the embed key we issue you. We'll also need the exact
+        domain(s) the widget will run on. Request one below, or email us directly at{' '}
+        <a href={`mailto:${BRAND.email}?subject=Perkul%20widget%20key`}>{BRAND.email}</a>.
       </p>
 
       <h3>If your CMS strips &lt;script&gt; tags</h3>
@@ -140,16 +129,7 @@ export default function ForPublishersPage() {
         no JavaScript for a sanitiser to remove, so it survives anywhere an <code>&lt;iframe&gt;</code>{' '}
         tag itself is allowed:
       </p>
-      <pre
-        style={{
-          background: 'var(--panel)',
-          color: '#fff',
-          padding: '1rem',
-          borderRadius: '0.5rem',
-          overflowX: 'auto',
-          fontSize: '0.82rem',
-        }}
-      >
+      <pre className="code-block">
         <code>{iframeSnippet}</code>
       </pre>
       <p>
@@ -158,22 +138,8 @@ export default function ForPublishersPage() {
         rather than cropping.
       </p>
 
-      <h2>Live demo</h2>
-      <p>This is the widget, embedded on this very page, exactly as it would appear on yours:</p>
-      <div
-        className="perkul-widget"
-        data-perkul-key="demo"
-        style={{
-          border: '1px solid var(--rule)',
-          borderRadius: '0.75rem',
-          overflow: 'hidden',
-          margin: '1rem 0 2rem',
-          minHeight: '420px',
-        }}
-      />
-      <script src="/embed.js" async />
-
       <h2>Attribution</h2>
+
       <p>
         The one condition: a visible link back to perkul.com somewhere in the HTML of the page
         hosting the widget (a byline, a "powered by" note, a footer credit — any wording, any
