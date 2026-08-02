@@ -52,12 +52,19 @@ const faqJsonLd = {
   })),
 };
 
+const creditLine = `<p style="font-size:0.8rem;color:#666;margin-top:0.5rem;">
+  Word game powered by <a href="${siteUrl('/')}" target="_blank" rel="noopener">Perkul</a>
+</p>`;
+
 const scriptSnippet = `<div class="perkul-widget" data-perkul-key="YOUR_KEY"></div>
-<script src="${siteUrl('/embed.js')}" async></script>`;
+<script src="${siteUrl('/embed.js')}" async></script>
+${creditLine}`;
 
 const iframeSnippet = `<iframe src="${siteUrl('/embed/daily')}?k=YOUR_KEY"
         width="100%" height="640" style="border:0" loading="lazy"
-        title="Perkul word game"></iframe>`;
+        title="Perkul word game"></iframe>
+${creditLine}`;
+
 
 export default function ForPublishersPage() {
   return (

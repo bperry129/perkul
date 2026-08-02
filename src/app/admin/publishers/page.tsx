@@ -87,12 +87,15 @@ export default async function PublishersPage() {
             <p style={{ fontSize: '0.82rem', margin: '0.4rem 0' }}>
               Embed URL: <a href={embedUrl} target="_blank" rel="noopener noreferrer">{embedUrl}</a>
             </p>
-            <p style={{ fontSize: '0.82rem', margin: '0.4rem 0' }}>
-              Snippet:{' '}
-              <code style={{ fontSize: '0.75rem' }}>
-                {`<div class="perkul-widget" data-perkul-key="${p.key}"></div><script src="${siteUrl('/embed.js')}" async></script>`}
-              </code>
-            </p>
+            <p style={{ fontSize: '0.82rem', margin: '0.4rem 0' }}>Snippet (give this exact block to the publisher — it includes the required credit link):</p>
+            <pre className="code-block" style={{ fontSize: '0.75rem' }}>
+              <code>{`<div class="perkul-widget" data-perkul-key="${p.key}"></div>
+<script src="${siteUrl('/embed.js')}" async></script>
+<p style="font-size:0.8rem;color:#666;margin-top:0.5rem;">
+  Word game powered by <a href="${siteUrl('/')}" target="_blank" rel="noopener">Perkul</a>
+</p>`}</code>
+            </pre>
+
 
             {p.attribution_grace_until ? (
               <p className="notice notice--quiet" style={{ fontSize: '0.8rem' }}>
