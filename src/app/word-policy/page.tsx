@@ -5,7 +5,11 @@ import { BRAND } from '@/lib/brand';
 export const metadata: Metadata = {
   title: 'Word Policy — What Counts as a Word in Perkul',
   description: `The vocabulary rules behind Perkul's daily word puzzle. What counts as a real word, what's excluded, and how our fabricated fake words are made. Curated modern English only.`,
+  // The apex and www both answer for every page. Naming the canonical form here
+  // means a crawler is never left to guess which of the two is the real one.
+  alternates: { canonical: '/word-policy' },
 };
+
 
 export default function WordPolicyPage() {
   return (

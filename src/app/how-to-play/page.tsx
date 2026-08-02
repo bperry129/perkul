@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   title: 'How to Play Perkul — Daily Word Puzzle Game Rules',
   description:
     'Learn how to play Perkul, the free daily word puzzle game. Five words each round — one is fake. Guess correctly, beat the clock, and top the leaderboard. Rules, scoring, and FAQ.',
+  // The apex and www both answer for every page. Naming the canonical form here
+  // means a crawler is never left to guess which of the two is the real one.
+  alternates: { canonical: '/how-to-play' },
 };
+
 
 const faqItems = [
   {

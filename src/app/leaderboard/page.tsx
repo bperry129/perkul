@@ -19,7 +19,11 @@ export const metadata: Metadata = {
   title: "Today's Leaderboard — Perkul Daily Word Game Rankings",
   description:
     "See today's Perkul standings. Who got the most right, who answered fastest, and where you rank against every player who completed today's word puzzle.",
+  // The apex and www both answer for every page. Naming the canonical form here
+  // means a crawler is never left to guess which of the two is the real one.
+  alternates: { canonical: '/leaderboard' },
 };
+
 
 /**
  * Today · Smartest players · Total points.

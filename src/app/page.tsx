@@ -26,12 +26,28 @@ const DEFAULT_METADATA: Metadata = {
   title: 'Perkul — Free Daily Word Puzzle Game',
   description:
     'Play Perkul: the free daily word puzzle game where one word in every round is fake. Ten competitive rounds, a live leaderboard, and a new puzzle every day. Better than Wordle.',
+  /**
+   * State the front page's own address explicitly.
+   *
+   * Two reasons. The apex and `www` both answer, so without this the homepage
+   * has two spellings and no opinion about which one is real. And every
+   * challenge link is `/?c=<attemptId>` — a distinct URL per player per day,
+   * all of them serving the same puzzle. Left alone that is an unbounded set of
+   * near-duplicate pages for a crawler to wade through; pointing them all at
+   * `/` collapses them back into one.
+   */
+  alternates: { canonical: '/' },
   openGraph: {
     title: 'Perkul — Free Daily Word Puzzle Game',
     description:
       'Five words per round. One is fake. Ten rounds, live leaderboard, new puzzle every day. Free to play.',
+    // A page-level `openGraph` replaces the root layout's wholesale rather than
+    // merging into it, so `url` has to be restated here or the homepage ships
+    // without an og:url at all.
+    url: `https://${BRAND.domain}`,
   },
 };
+
 
 /**
  * Challenge links (/?c=<attemptId>) need their own share preview — otherwise

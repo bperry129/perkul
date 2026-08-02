@@ -57,6 +57,32 @@ describe('the initial 20-day bank', () => {
     expect(fakes).toHaveLength(200);
   });
 
+  /**
+   * Fakes are checked for reuse above, and the validator catches a word repeated
+   * inside one game. Neither covers a real word turning up in two different
+   * games, because each game is validated against history and the seed bank has
+   * no history behind it. Assert the whole bank at once instead.
+   */
+  it('never repeats a displayed word anywhere in the bank', () => {
+    const places = new Map<string, string[]>();
+    for (const game of SEED_GAMES) {
+      for (const round of game.rounds) {
+        for (const option of round.options) {
+          const key = normalizeWord(option.word);
+          places.set(key, [...(places.get(key) ?? []), `#${game.gameNumber} round ${round.position}`]);
+        }
+      }
+    }
+
+    // Named so a failure reports which word collided and where, not just a count.
+    const repeats = [...places.entries()]
+      .filter(([, seen]) => seen.length > 1)
+      .map(([word, seen]) => `${word.toUpperCase()} — ${seen.join(', ')}`);
+
+    expect(repeats).toEqual([]);
+    expect(places.size).toBe(1000);
+  });
+
   it('never uses a word that appears as a real word elsewhere in the bank as a fake', () => {
     const accepted = acceptedFromBank();
     for (const game of SEED_GAMES) {

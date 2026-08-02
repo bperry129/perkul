@@ -2,13 +2,11 @@ import type { Metadata, Viewport } from 'next';
 import { Baloo_2, Nunito, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND } from '@/lib/brand';
+import { ADSENSE_CLIENT } from '@/lib/adsense';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { StatCounter } from '@/components/StatCounter';
 import { AmbientBubbles } from '@/components/AmbientBubbles';
-
-/** Google AdSense publisher. Env override so a preview deploy can run without it. */
-const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-3524846850046440';
 
 /**
  * Type system.

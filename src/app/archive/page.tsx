@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   title: 'Puzzle Archive — Play Every Past Perkul Game',
   description:
     'Play any past Perkul puzzle for fun. Every daily game ever published, free and unranked — a new one joins the archive every midnight.',
+  // The apex and www both answer for every page. Naming the canonical form here
+  // means a crawler is never left to guess which of the two is the real one.
+  alternates: { canonical: '/archive' },
   openGraph: {
+
     title: 'Perkul Puzzle Archive — Play Every Past Game',
     description:
       'Missed a day? Play any previous Perkul puzzle for fun. Unranked, unlimited, free.',
