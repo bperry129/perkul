@@ -1,14 +1,19 @@
 import 'server-only';
-import { cache } from 'react';
 import { serviceClient, isSupabaseConfigured } from './supabase/admin';
 
 /**
  * The publisher registry — who may embed the game, and from where.
  *
- * Read on every embed request, so it is wrapped in React's per-request `cache`:
- * the page and the layout both need the same row and neither should pay for it
- * twice.
+ * NOTE: this module must stay free of React's `cache()` (and any other
+ * React-Server-Component-only API). `middleware.ts` imports `lookupPublisher`
+ * and `frameAncestors` from here, and middleware runs on Vercel's Edge
+ * runtime outside of any React render — `cache()` throws at module-evaluation
+ * time in that context, which takes down *every* request the middleware
+ * touches, not just `/embed/*`. The request-deduped wrapper lives in
+ * `./publisher-cache.ts` instead, imported only by Server Components/Route
+ * Handlers, never by middleware.
  */
+
 
 export type PublisherRow = {
   id: string;
@@ -46,9 +51,6 @@ export async function lookupPublisher(key: string | null): Promise<PublisherRow 
 
   return (data as PublisherRow | null) ?? null;
 }
-
-export const findPublisher = cache(lookupPublisher);
-
 
 /**
  * Only scheme + host, and only https. Anything else is dropped rather than

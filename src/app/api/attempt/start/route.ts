@@ -1,6 +1,6 @@
 import { startAttempt } from '@/lib/attempts';
 import { attachAnonCookie, fail, json, readJson, resolveIdentity } from '@/lib/api';
-import { findPublisher } from '@/lib/publishers';
+import { findPublisher } from '@/lib/publisher-cache';
 import { logEvent } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';

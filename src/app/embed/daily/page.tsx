@@ -5,7 +5,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/admin';
 import { getTodaysGame, gameSummary } from '@/lib/games';
 import { findAttemptForIdentity, getActiveAttempt } from '@/lib/attempts';
 import { getIdentity } from '@/lib/auth';
-import { findPublisher } from '@/lib/publishers';
+import { findPublisher } from '@/lib/publisher-cache';
 
 export const dynamic = 'force-dynamic';
 

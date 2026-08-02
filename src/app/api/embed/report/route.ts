@@ -1,5 +1,6 @@
 import { serviceClient, isSupabaseConfigured } from '@/lib/supabase/admin';
-import { findPublisher, normalizeOrigin } from '@/lib/publishers';
+import { normalizeOrigin } from '@/lib/publishers';
+import { findPublisher } from '@/lib/publisher-cache';
 import { fail, json, readJson } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
