@@ -92,4 +92,43 @@ export const embedCookieOptions = {
   maxAge: MAX_AGE,
 };
 
+/**
+ * A one-time bridge for the popup sign-in flow, and the reason it has to
+ * exist at all: the anon id inside `/embed/*` lives in a CHIPS-partitioned
+ * jar keyed to the *publisher's* top-level site (see embedCookieOptions
+ * above), while the sign-in popup is its own top-level navigation to
+ * perkul.com and therefore gets the ordinary, unpartitioned jar — a
+ * completely different cookie store with no way to see the embed's anon id.
+ * There is no cookie that is simultaneously readable from both contexts.
+ *
+ * So the embed page hands the anon id to its own client as a short-lived
+ * signed token (never the raw id — a bare id would let anyone claim anyone
+ * else's guest attempts just by guessing or reading one out of devtools),
+ * the client passes that token to the popup on perkul.com in the URL, and the
+ * popup's own first-party request to /api/attempt/claim verifies the
+ * signature and expiry before trusting it. Ten minutes is generous for
+ * "finish a ten-round game, then decide to sign up" and short enough that a
+ * leaked or logged URL is worthless shortly after.
+ */
+const CLAIM_TOKEN_TTL_MS = 10 * 60 * 1000;
+
+export function signClaimToken(anonId: string): string {
+  const expires = Date.now() + CLAIM_TOKEN_TTL_MS;
+  const payload = `${anonId}.${expires}`;
+  return `${payload}.${sign(payload)}`;
+}
+
+export function verifyClaimToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [anonId, expiresRaw, sig] = parts;
+  const payload = `${anonId}.${expiresRaw}`;
+  if (sign(payload) !== sig) return null;
+  const expires = Number(expiresRaw);
+  if (!Number.isFinite(expires) || Date.now() > expires) return null;
+  return anonId || null;
+}
+
+
 

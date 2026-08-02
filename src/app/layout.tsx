@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { Baloo_2, Nunito, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND } from '@/lib/brand';
@@ -83,8 +84,27 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  /*
+   * `/embed/*` gets none of the site chrome below: no wordmark header (the
+   * embed page supplies its own, credited and linking out — see
+   * docs/widget-handoff.md), no footer, no ambient decoration, no analytics
+   * pixel that was never built to run inside someone else's iframe.
+   *
+   * A nested `app/embed/layout.tsx` cannot express this by itself — this root
+   * layout still wraps it and would render SiteHeader/SiteFooter regardless.
+   * The clean fix is two independent root layouts via route groups, but that
+   * requires moving every existing top-level route into a group. Reading the
+   * `x-embed` request header that middleware.ts sets for this same request is
+   * the one-line alternative.
+   */
+  const isEmbed = headers().get('x-embed') === '1';
+
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${sans.variable} ${mono.variable}`}
+      data-embed={isEmbed ? 'true' : undefined}
+    >
       <head>
         {/*
           AdSense loader, verbatim in <head> as Google's instructions specify.
@@ -97,31 +117,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           actually serves ads later.
 
           Loader only — there are no ad units in the app, so players see nothing.
+          Skipped for the embed: it is someone else's page, and AdSense
+          ownership is proved by perkul.com's own HTML, not by every iframe
+          perkul.com happens to render.
         */}
-        <script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-          crossOrigin="anonymous"
-        />
+        {!isEmbed ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </head>
       <body>
-        {/*
-          Decorative circles floating in the green either side of the page. First
-          in the body so it is out of the way of everything that matters; it is
-          fixed and on z-index -1, so document order is irrelevant to painting.
-          Wide screens only, and it hides itself during a timed round.
-        */}
-        <AmbientBubbles />
-        <SiteHeader />
+        {!isEmbed ? (
+          <>
+            {/*
+              Decorative circles floating in the green either side of the page. First
+              in the body so it is out of the way of everything that matters; it is
+              fixed and on z-index -1, so document order is irrelevant to painting.
+              Wide screens only, and it hides itself during a timed round.
+            */}
+            <AmbientBubbles />
+            <SiteHeader />
+          </>
+        ) : null}
         <main>{children}</main>
-        <SiteFooter />
-        {/*
-          StatCounter (project 13338902), last in <body> as instructed. The
-          component, not an inline snippet: it also counts client-side route
-          changes, leaves /admin out, and avoids React preloading the counting
-          pixel — which would double every figure. See src/components/StatCounter.tsx.
-        */}
-        <StatCounter />
+        {!isEmbed ? (
+          <>
+            <SiteFooter />
+            {/*
+              StatCounter (project 13338902), last in <body> as instructed. The
+              component, not an inline snippet: it also counts client-side route
+              changes, leaves /admin out, and avoids React preloading the counting
+              pixel — which would double every figure. See src/components/StatCounter.tsx.
+            */}
+            <StatCounter />
+          </>
+        ) : null}
       </body>
     </html>
   );

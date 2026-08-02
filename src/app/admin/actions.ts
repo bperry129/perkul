@@ -13,7 +13,11 @@ import { buildGenerationPrompt } from '@/lib/prompt';
 import { setFlag } from '@/lib/flags';
 import { deleteSimulatedAttempts, generateSimulatedAttempts, countSimulatedAttempts } from '@/lib/simulate';
 import { normalizeWord } from '@/lib/content/draft';
+import { generatePublisherKey } from '@/lib/publisher-admin';
+import { checkAttributionForPublisher } from '@/lib/attribution';
+import { normalizeOrigin } from '@/lib/publishers';
 import type { GameStatus, RoundType } from '@/lib/types';
+
 
 /**
  * Every action re-checks admin authorisation on the server. Hiding a button is
@@ -506,3 +510,77 @@ export async function updateLexiconAction(formData: FormData) {
   await logAdminAction(adminId, 'lexicon.update', 'lexicon', id, {});
   revalidatePath('/admin/lexicon');
 }
+
+/* -------------------------------------------------------------------------- */
+/* Publishers (embeddable widget)                                              */
+/* -------------------------------------------------------------------------- */
+
+export async function createPublisherAction(formData: FormData) {
+  const adminId = await guard();
+  const name = str(formData, 'name');
+  if (!name) throw new Error('Name is required.');
+
+  const originsRaw = str(formData, 'allowedOrigins');
+  const allowedOrigins = originsRaw
+    .split(/[\n,]/)
+    .map((line) => normalizeOrigin(line))
+    .filter((value): value is string => value !== null);
+
+  const key = generatePublisherKey();
+
+  const { data, error } = await serviceClient()
+    .from('publishers')
+    .insert({
+      key,
+      name,
+      contact_email: str(formData, 'contactEmail') || null,
+      allowed_origins: allowedOrigins,
+      active: true,
+    })
+    .select('id')
+    .single();
+
+  if (error || !data) throw new Error('Could not create publisher.');
+
+  await logAdminAction(adminId, 'publisher.create', 'publisher', (data as { id: string }).id, {
+    name,
+    allowedOrigins,
+  });
+  revalidatePath('/admin/publishers');
+}
+
+export async function updatePublisherAction(formData: FormData) {
+  const adminId = await guard();
+  const id = str(formData, 'id');
+  if (!id) throw new Error('Missing publisher id.');
+
+  const originsRaw = str(formData, 'allowedOrigins');
+  const allowedOrigins = originsRaw
+    .split(/[\n,]/)
+    .map((line) => normalizeOrigin(line))
+    .filter((value): value is string => value !== null);
+
+  const patch: Record<string, unknown> = {
+    name: str(formData, 'name'),
+    contact_email: str(formData, 'contactEmail') || null,
+    allowed_origins: allowedOrigins,
+    active: formData.get('active') === 'on',
+    ads_enabled: formData.get('adsEnabled') === 'on',
+    notes: str(formData, 'notes') || null,
+  };
+
+  await serviceClient().from('publishers').update(patch).eq('id', id);
+  await logAdminAction(adminId, 'publisher.update', 'publisher', id, patch);
+  revalidatePath('/admin/publishers');
+}
+
+export async function runAttributionCheckAction(formData: FormData) {
+  const adminId = await guard();
+  const id = str(formData, 'id');
+  if (!id) throw new Error('Missing publisher id.');
+  const result = await checkAttributionForPublisher(id);
+  await logAdminAction(adminId, 'publisher.attribution_check', 'publisher', id, result);
+  revalidatePath('/admin/publishers');
+}
+
+

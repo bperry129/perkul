@@ -3,11 +3,13 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from './supabase/server';
 import {
   anonCookieOptions,
+  embedCookieOptions,
   encodeSession,
   newAnonSessionId,
   readAnonSessionId,
 } from './session';
 import type { Identity } from './attempts';
+
 
 export function json(data: unknown, status = 200): NextResponse {
   return NextResponse.json(data, {
@@ -37,11 +39,24 @@ export async function resolveIdentity(): Promise<{
   return { identity: { userId: null, anonId }, freshAnonId: anonId };
 }
 
-export function attachAnonCookie(response: NextResponse, freshAnonId: string | null): NextResponse {
+/**
+ * `embed` picks `embedCookieOptions` (`SameSite=None; Secure; Partitioned`)
+ * instead of the ordinary `Lax` cookie. Callers set it based on whether the
+ * request came from `/embed/*` — never by trusting anything the client
+ * asserts about itself, since that flag decides a security-relevant cookie
+ * attribute.
+ */
+export function attachAnonCookie(
+  response: NextResponse,
+  freshAnonId: string | null,
+  embed = false,
+): NextResponse {
   if (!freshAnonId) return response;
-  response.cookies.set({ ...anonCookieOptions, value: encodeSession(freshAnonId) });
+  const options = embed ? embedCookieOptions : anonCookieOptions;
+  response.cookies.set({ ...options, value: encodeSession(freshAnonId) });
   return response;
 }
+
 
 export async function readJson<T>(request: Request): Promise<T | null> {
   try {

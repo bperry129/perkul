@@ -22,8 +22,10 @@ const NAV = [
   ['/admin/comparisons', 'Comparisons'],
   ['/admin/dummy-players', 'Dummy Players'],
   ['/admin/flags', 'Feature flags'],
+  ['/admin/publishers', 'Publishers'],
   ['/admin/settings', 'Settings'],
 ] as const;
+
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Server-side authorization. Not "the link is hidden".

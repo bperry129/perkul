@@ -307,6 +307,108 @@ function Standing({ result }: { result: AttemptResult }) {
   );
 }
 
+/* ---------------------------------------------------------- embed sign-in -- */
+
+/**
+ * The embed's "save my score" button.
+ *
+ * A plain `<Link target="_blank">` (what the rest of this component uses for
+ * every other outbound destination) would open a full first-party tab and
+ * just... leave it there after sign-in, with no way to tell the iframe
+ * anything happened. This instead opens perkul.com/login as a small
+ * `window.open` popup, carrying a short-lived signed token for the guest's
+ * embed-only anon id (see `signClaimToken` in src/lib/session.ts for why a
+ * cookie cannot do this), and listens for the popup's postMessage when it's
+ * done.
+ *
+ * What this button deliberately does NOT do: assume the iframe becomes
+ * "signed in" once the popup closes. Supabase's own auth cookie is set on the
+ * popup's ordinary first-party jar; whether a subsequent request *from
+ * inside this iframe* also carries it depends on that cookie's own SameSite
+ * setting, which is outside this component's control. So the confirmation
+ * here is honest about what actually happened — the account exists and the
+ * attempt is linked to it — rather than implying the embed itself just
+ * became a signed-in session.
+ */
+function EmbedSignupCta({ result }: { result: AttemptResult }) {
+  const [state, setState] = useState<'idle' | 'opening' | 'claimed'>('idle');
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      const data = event.data as { source?: string; type?: string } | null;
+      if (data?.source === 'perkul-embed' && data.type === 'claimed') {
+        setState('claimed');
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  const openPopup = async () => {
+    setState('opening');
+    let token: string | null = null;
+    try {
+      const response = await fetch('/api/embed/claim-token');
+      const payload = (await response.json()) as { ok: boolean; token: string | null };
+      token = payload.token;
+    } catch {
+      /* proceed without a token — sign-up still works, just nothing to claim */
+    }
+
+    const url = new URL('/login', window.location.origin);
+    url.searchParams.set('claim', '1');
+    url.searchParams.set('popup', '1');
+    if (token) url.searchParams.set('anonToken', token);
+
+    const popup = window.open(
+      url.toString(),
+      'perkul-login',
+      'width=460,height=680,noopener=no,noreferrer=no',
+    );
+    if (!popup) {
+      // Popup blockers still exist. A full first-party tab is the fallback —
+      // worse (no postMessage back) but never a dead click.
+      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+    }
+    setState('idle');
+  };
+
+  if (state === 'claimed') {
+    return (
+      <div className="cta">
+        <h2 className="cta__title">You&apos;re signed up.</h2>
+        <p style={{ color: 'var(--ink-soft)' }}>
+          Your account is linked to this score. Visit{' '}
+          <a
+            href="https://perkul.com"
+
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#fff', textDecoration: 'underline' }}
+          >
+            perkul.com
+          </a>{' '}
+          and sign in there to see it on your profile.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cta">
+      <h2 className="cta__title">Get on the leaderboard.</h2>
+      <p style={{ color: 'var(--ink-soft)' }}>
+        Create a free account, pick your leaderboard name, and your{' '}
+        {result.correctCount}/{result.roundsTotal} in {formatSeconds(result.elapsedMs)}s is
+        saved - plus your streak and history across devices.
+      </p>
+      <button type="button" className="action" onClick={openPopup} disabled={state === 'opening'}>
+        {state === 'opening' ? 'Opening...' : 'Choose my name and save my score'}
+      </button>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ view --- */
 
 export function ResultsView({
@@ -315,15 +417,31 @@ export function ResultsView({
   showSignupCta = true,
   sharingEnabled = true,
   onPlayAgain,
+  embed = false,
 }: {
   result: AttemptResult;
   animate?: boolean;
   showSignupCta?: boolean;
   sharingEnabled?: boolean;
   onPlayAgain?: () => void;
+  /**
+   * True inside `/embed/*`. Every link below that leaves this component
+   * normally navigates the current document — fine on perkul.com, but inside
+   * a third-party iframe that document IS the frame, and every one of these
+   * destinations sits outside `/embed/*`, still covered by the blanket
+   * `X-Frame-Options: SAMEORIGIN` in next.config.mjs. Navigating there in the
+   * same frame does not show a login page or a leaderboard; it shows a blank
+   * iframe, because the browser refuses to render it. `target="_blank"` sends
+   * it to a real, first-party tab instead — which is also where a sign-in has
+   * to happen anyway (see the popup sign-in note in docs/widget-handoff.md).
+   */
+  embed?: boolean;
 }) {
   const missedRounds = result.rounds.filter((r) => !r.isCorrect).map((r) => r.roundNumber);
   const records = result.records;
+  const outbound = embed ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+
+
 
   return (
     <section>
@@ -415,20 +533,26 @@ export function ResultsView({
         </div>
       ) : null}
 
-      {/* Sign up CTA */}
+      {/* Sign up CTA. Embedded guests get the popup + postMessage flow
+          above; everywhere else a plain link to /login is enough. */}
       {!result.isAuthenticated && showSignupCta ? (
-        <div className="cta">
-          <h2 className="cta__title">Get on the leaderboard.</h2>
-          <p style={{ color: 'var(--ink-soft)' }}>
-            Create a free account, pick your leaderboard name, and your{' '}
-            {result.correctCount}/{result.roundsTotal} in {formatSeconds(result.elapsedMs)}s is
-            saved - plus your streak and history across devices.
-          </p>
-          <Link className="action" href="/login?claim=1">
-            Choose my name and save my score
-          </Link>
-        </div>
+        embed ? (
+          <EmbedSignupCta result={result} />
+        ) : (
+          <div className="cta">
+            <h2 className="cta__title">Get on the leaderboard.</h2>
+            <p style={{ color: 'var(--ink-soft)' }}>
+              Create a free account, pick your leaderboard name, and your{' '}
+              {result.correctCount}/{result.roundsTotal} in {formatSeconds(result.elapsedMs)}s is
+              saved - plus your streak and history across devices.
+            </p>
+            <Link className="action" href="/login?claim=1">
+              Choose my name and save my score
+            </Link>
+          </div>
+        )
       ) : null}
+
 
       <div className="roundup">
         <h2 className="admin-title" style={{ fontSize: '1.4rem', margin: '2.5rem 0 0.5rem' }}>
@@ -443,21 +567,22 @@ export function ResultsView({
       <div className="toolbar" style={{ marginTop: '2rem' }}>
         {/* Plain <a> for the same reason as the header link: a client-side
             navigation can render a reused RSC payload of the board. */}
-        <a className="action action--ghost" href="/leaderboard">
+        <a className="action action--ghost" href="/leaderboard" {...outbound}>
           Today's leaderboard
         </a>
         {/* A result should never be a dead end. Plain <a> so the homepage is
             re-rendered on the server rather than restored from a cached payload
             of this same screen. */}
-        <a className="action action--ghost" href="/">
+        <a className="action action--ghost" href="/" {...outbound}>
           Back to {BRAND.name}
         </a>
-        <Link className="action--quiet" href="/stats">
+        <Link className="action--quiet" href="/stats" {...outbound}>
           Your past games
         </Link>
-        <Link className="action--quiet" href="/how-to-play">
+        <Link className="action--quiet" href="/how-to-play" {...outbound}>
           What counts as a word in {BRAND.name}?
         </Link>
+
       </div>
 
     </section>

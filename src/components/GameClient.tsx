@@ -46,13 +46,23 @@ export function GameClient({
   initialResult,
   showSignupCta,
   sharingEnabled,
+  embed,
 }: {
   game: PublicGameSummary | null;
   initialAttempt: ActiveAttemptPayload | null;
   initialResult: AttemptResult | null;
   showSignupCta: boolean;
   sharingEnabled: boolean;
+  /**
+   * Set only by `src/app/embed/daily/page.tsx`. `key` rides along on the
+   * `/api/attempt/start` request so the server — never the browser — decides
+   * which publisher (if any) this play is attributed to, and switches the
+   * anon-session cookie to the cross-site-safe `SameSite=None; Partitioned`
+   * variant. See docs/widget-handoff.md.
+   */
+  embed?: { key: string };
 }) {
+
   const [phase, setPhase] = useState<Phase>(
     initialResult ? 'done' : initialAttempt ? 'playing' : 'idle',
   );
@@ -105,8 +115,16 @@ export function GameClient({
       const response = await fetch('/api/attempt/start', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ gameId: game?.gameId, ...(practice ? { practice: true } : {}) }),
+        body: JSON.stringify({
+          gameId: game?.gameId,
+          ...(practice ? { practice: true } : {}),
+          // Resolved server-side against the publisher registry — see the
+          // comment on the route handler. Sending the key, not an id, is the
+          // point: the id is never something the browser gets to assert.
+          ...(embed ? { embedKey: embed.key } : {}),
+        }),
       });
+
       const payload = (await response.json()) as
         | { ok: true; attempt: ActiveAttemptPayload }
         | { ok: false; message: string };
@@ -274,8 +292,51 @@ export function GameClient({
     };
   }, [phase]);
 
+  /* -------------------------------------------------------- embed resizing */
+  // A fixed-height iframe breaks the moment a mobile news layout reflows the
+  // content taller than whatever the publisher guessed. embed.js listens for
+  // this message and resizes the <iframe> to match; nothing on perkul.com
+  // itself needs it, so the effect is a no-op whenever `embed` is unset.
+  useEffect(() => {
+    if (!embed || typeof window === 'undefined' || window.parent === window) return;
+
+    const post = () => {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({ source: 'perkul-embed', type: 'height', height }, '*');
+    };
+
+    post();
+    const observer = new ResizeObserver(post);
+    observer.observe(document.documentElement);
+    window.addEventListener('load', post);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('load', post);
+    };
+  }, [embed, phase, roundIndex]);
+
+  /* --------------------------------------------------- publisher page report */
+  // Tells the attribution crawler which real, on-the-open-web URL this embed
+  // is running on. `document.referrer` is the parent page's own URL for a
+  // plain cross-origin <iframe> navigation — no postMessage handshake with
+  // embed.js required — unless the publisher sends
+  // `Referrer-Policy: no-referrer`, in which case there is nothing to report
+  // and this silently does nothing. Fires once per mount; the crawler, not
+  // this effect, decides whether the link is actually present.
+  useEffect(() => {
+    if (!embed || typeof document === 'undefined' || !document.referrer) return;
+    void fetch('/api/embed/report', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key: embed.key, pageUrl: document.referrer }),
+    }).catch(() => {
+      /* best-effort; the crawler simply has one less page to check */
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embed]);
 
   /* ------------------------------------------------------------------ views */
+
 
   if (phase === 'done' && result) {
     return (
@@ -285,9 +346,11 @@ export function GameClient({
         showSignupCta={showSignupCta}
         sharingEnabled={sharingEnabled}
         onPlayAgain={playAgain}
+        embed={Boolean(embed)}
       />
     );
   }
+
 
   if (phase === 'submitting') {
     return (
@@ -406,9 +469,17 @@ export function GameClient({
         >
           {phase === 'starting' ? 'Starting...' : 'Start today\'s game'}
         </button>
-        <Link className="action--quiet" href="/how-to-play">
+        {/* Outside `/embed/*`, so a same-frame navigation there would hit
+            X-Frame-Options: SAMEORIGIN and go blank — see the note on
+            ResultsView's `embed` prop. */}
+        <Link
+          className="action--quiet"
+          href="/how-to-play"
+          {...(embed ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        >
           How to play
         </Link>
+
       </div>
 
       <p className="clocknote" style={{ marginTop: '1.5rem' }}>

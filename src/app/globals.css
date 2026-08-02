@@ -1486,3 +1486,76 @@ body[data-playing] .bubbles { display: none; }
 }
 
 ::selection { background: var(--yellow); color: var(--ink); }
+
+/* =============================================================================
+   EMBED — /embed/*
+   -----------------------------------------------------------------------------
+   The widget renders inside a publisher's iframe, not on the green canvas, so
+   it drops the ambient bubbles, the masthead/footer chrome and the shell's own
+   background: `html[data-embed]` (set by the root layout from the `x-embed`
+   request header — see middleware.ts) turns the page white edge-to-edge and
+   lets .embed-shell take over spacing.
+
+   The wordmark link lives in the *header* of the widget, never a footer strip:
+   a parent page can crop an iframe with overflow:hidden, and a footer is the
+   first thing lost. See docs/widget-handoff.md.
+   ============================================================================= */
+
+html[data-embed] {
+  background: var(--card);
+}
+
+html[data-embed] body {
+  background: var(--card);
+}
+
+.embed-shell {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.9rem 1rem 1.4rem;
+  margin: 0 auto;
+}
+
+.embed-shell--blocked {
+  padding: 2rem 1.25rem;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.embed-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--brand-dark);
+  text-decoration: none;
+  margin-bottom: 0.9rem;
+}
+
+.embed-wordmark::after {
+  content: '↗';
+  font-size: 0.75em;
+  opacity: 0.7;
+}
+
+.embed-wordmark:hover {
+  color: var(--brand-deep);
+  text-decoration: none;
+}
+
+.embed-empty {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* The widget has no room for the full-width credit strip other pages use —
+   keep the copy tight and let the wordmark above carry the attribution. */
+.embed-shell .dateline,
+.embed-shell .game-head {
+  font-size: 0.82rem;
+}
+
+

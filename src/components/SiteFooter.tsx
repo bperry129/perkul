@@ -17,7 +17,9 @@ export function SiteFooter() {
         <Link href="/archive">Past Puzzles</Link>
         <Link href="/how-to-play">How to Play</Link>
         <Link href="/word-policy">Word Policy</Link>
+        <Link href="/for-publishers">For Publishers</Link>
         <Link href="/privacy">Privacy</Link>
+
         <Link href="/terms">Terms</Link>
         <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>
       </div>

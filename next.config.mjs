@@ -17,9 +17,11 @@ const nextConfig = {
          *
          * So `/embed/*` is excluded here and defends itself with a
          * `Content-Security-Policy: frame-ancestors` computed per publisher at
-         * request time (see src/app/embed/layout.tsx). That is strictly
-         * stronger than XFO — it names the exact origins allowed to frame a
-         * given key, and the browser enforces it.
+         * request time (see src/middleware.ts — a layout cannot set response
+         * headers, so it has to happen there). That is strictly stronger than
+         * XFO — it names the exact origins allowed to frame a given key, and
+         * the browser enforces it.
+
          *
          * Negative lookahead rather than two positive rules: a publisher who
          * embeds must not be able to reach any other path of ours in a frame.

@@ -1,19 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
  * Unified sign-in / create-account form.
  * No magic links. No Google. Just email + password.
  * Sign-up collects a leaderboard display name upfront.
+ *
+ * `popup`/`anonToken` exist for exactly one caller: the embed's "save my
+ * score" button opens this page in a `window.open` popup rather than
+ * navigating the iframe itself (see docs/widget-handoff.md — the login form
+ * must never render inside a third-party iframe). In that mode, success does
+ * not redirect; it claims the guest's attempt with the token, tells the
+ * opener via postMessage, and closes itself.
  */
-export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
+export function LoginForm({
+  next,
+  claim,
+  anonToken,
+  popup = false,
+  alreadySignedIn = false,
+}: {
+  next: string;
+  claim: boolean;
+  anonToken?: string;
+  popup?: boolean;
+  alreadySignedIn?: boolean;
+}) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [status, setStatus] = useState<'idle' | 'busy' | 'check-email'>('idle');
+  const [status, setStatus] = useState<'idle' | 'busy' | 'check-email' | 'popup-done'>('idle');
   const [message, setMessage] = useState<string | null>(null);
 
   // Becomes {{ .RedirectTo }} in the Supabase "Confirm signup" email
@@ -26,8 +45,50 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
       (typeof window !== 'undefined' ? window.location.origin : '');
     const url = new URL(next, base);
     if (claim) url.searchParams.set('claim', '1');
+    // Carried through in case the confirmation link happens to be opened in
+    // the same popup window — best-effort; a link opened from a separate mail
+    // client tab has no window.opener regardless, and that's fine.
+    if (popup) url.searchParams.set('popup', '1');
+    if (anonToken) url.searchParams.set('anonToken', anonToken);
     return url.toString();
   };
+
+  /**
+   * The popup-only finish line: claim the guest attempt with the signed
+   * token (never a cookie — see src/lib/session.ts), tell the iframe it can
+   * refresh, then close. window.opener is same-origin here (both windows are
+   * perkul.com; only the iframe's *top-level* page is third-party), so this
+   * postMessage is safe to read without an origin check on the sender side.
+   */
+  const finishPopup = async () => {
+    try {
+      await fetch('/api/attempt/claim', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ anonToken }),
+      });
+    } catch {
+      /* the leaderboard claim is best-effort; the account itself is already created */
+    }
+    try {
+      window.opener?.postMessage({ source: 'perkul-embed', type: 'claimed' }, '*');
+    } catch {
+      /* opener may already be gone */
+    }
+    setStatus('popup-done');
+    window.setTimeout(() => {
+      try {
+        window.close();
+      } catch {
+        /* some browsers refuse to close a window script didn't open cleanly — the status message covers it */
+      }
+    }, 600);
+  };
+
+  useEffect(() => {
+    if (popup && alreadySignedIn) void finishPopup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Produce a human-readable message from whatever Supabase throws */
 
@@ -58,7 +119,11 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
         password,
       });
       if (error) throw error;
-      window.location.href = next;
+      if (popup) {
+        await finishPopup();
+      } else {
+        window.location.href = next;
+      }
     } catch (error) {
       setStatus('idle');
       setMessage(extractMessage(error, 'Could not sign in. Check your email and password.'));
@@ -113,7 +178,11 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
             body: JSON.stringify({ displayName: displayName.trim(), leaderboardOptIn: true }),
           });
         }
-        window.location.href = next;
+        if (popup) {
+          await finishPopup();
+        } else {
+          window.location.href = next;
+        }
       } else {
         setStatus('check-email');
       }
@@ -124,6 +193,15 @@ export function LoginForm({ next, claim }: { next: string; claim: boolean }) {
   };
 
   /* ---------------------------------------------------------------- states */
+
+  if (status === 'popup-done') {
+    return (
+      <div className="notice notice--quiet">
+        <strong>You're all set.</strong> This tab should close automatically — if it doesn't, you
+        can close it and go back to the game.
+      </div>
+    );
+  }
 
   if (status === 'check-email') {
     return (

@@ -22,7 +22,17 @@ export type PublisherRow = {
 /** Keys travel in URLs and end up in other people's HTML. Keep them boring. */
 const KEY_PATTERN = /^[A-Za-z0-9_-]{4,64}$/;
 
-export const findPublisher = cache(async (key: string | null): Promise<PublisherRow | null> => {
+/**
+ * Uncached lookup. Exists mainly for `middleware.ts`: the security header there
+ * is set once per request against an Edge Function instance that can live far
+ * longer than a single request, so wrapping this in React's `cache()` (which
+ * has no request boundary outside a Server Component / Route Handler render)
+ * would risk pinning a suspended publisher's old `active: true` row in memory
+ * for the lifetime of that instance. Server Components and Route Handlers
+ * should use `findPublisher` below instead, purely to dedupe repeat reads
+ * within one request.
+ */
+export async function lookupPublisher(key: string | null): Promise<PublisherRow | null> {
   // Reject malformed keys before touching the database. A key is attacker
   // controlled input that we are about to interpolate into a CSP header.
   if (!key || !KEY_PATTERN.test(key) || !isSupabaseConfigured()) return null;
@@ -35,7 +45,10 @@ export const findPublisher = cache(async (key: string | null): Promise<Publisher
     .maybeSingle();
 
   return (data as PublisherRow | null) ?? null;
-});
+}
+
+export const findPublisher = cache(lookupPublisher);
+
 
 /**
  * Only scheme + host, and only https. Anything else is dropped rather than

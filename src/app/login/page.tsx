@@ -13,12 +13,17 @@ export const metadata: Metadata = { title: 'Sign in' };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { next?: string; claim?: string };
+  searchParams: { next?: string; claim?: string; anonToken?: string; popup?: string };
 }) {
   const user = await getSessionUser();
-  if (user) redirect(searchParams.next || '/profile');
+  // A signed-in popup still has to run its claim + postMessage + close
+  // sequence — redirecting here (the normal, non-popup behaviour) would leave
+  // an already-signed-in publisher reader stuck in a popup with no way back
+  // to the game. LoginForm handles that branch itself.
+  if (user && !(searchParams.popup === '1')) redirect(searchParams.next || '/profile');
 
   const claim = searchParams.claim === '1';
+  const isPopup = searchParams.popup === '1';
 
   return (
     <div className="shell shell--narrow">
@@ -38,15 +43,23 @@ export default async function LoginPage({
 
       {isSupabaseConfigured() ? (
         <div style={{ marginTop: '2rem' }}>
-          <LoginForm next={searchParams.next || '/profile'} claim={claim} />
+          <LoginForm
+            next={searchParams.next || '/profile'}
+            claim={claim}
+            anonToken={searchParams.anonToken}
+            popup={isPopup}
+            alreadySignedIn={Boolean(user)}
+          />
         </div>
       ) : (
         <div className="notice">Authentication is not configured in this environment yet.</div>
       )}
 
-      <p className="label" style={{ marginTop: '2rem' }}>
-        <Link href="/">Back to today's game</Link>
-      </p>
+      {!isPopup ? (
+        <p className="label" style={{ marginTop: '2rem' }}>
+          <Link href="/">Back to today's game</Link>
+        </p>
+      ) : null}
     </div>
   );
 }
