@@ -419,6 +419,40 @@ code {
 body[data-playing] .asseenon { display: none; }
 
 
+/* A quiet, bottom-right nudge toward the publisher pitch, directly under the
+   white card — on the green, matching the masthead/colophon treatment rather
+   than the card's own type, so it reads as part of the page frame and not as
+   another button competing with "Start". */
+.embed-nudge {
+  width: 100%;
+  max-width: 42rem;
+  margin: 0.6rem auto 0;
+  padding: 0 1.25rem;
+  text-align: right;
+}
+
+.embed-nudge a {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+}
+
+.embed-nudge a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--yellow);
+  text-underline-offset: 0.2em;
+}
+
+/* Same rule as the press badge and the ambient bubbles: nothing but the ten
+   words while the clock is running. */
+body[data-playing] .embed-nudge { display: none; }
+
+
+
 
 /* ------------------------------------------------------------------- game -- */
 
