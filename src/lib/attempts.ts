@@ -192,8 +192,19 @@ async function publicPayload(
  */
 export async function startAttempt(
   identity: Identity,
-  options: { gameId?: string | null; allowPractice?: boolean } = {},
+  options: {
+    gameId?: string | null;
+    allowPractice?: boolean;
+    /**
+     * Set when the game is being played inside a third-party embed. Recorded on
+     * the attempt for per-publisher analytics, and — for a guest — the reason
+     * the attempt is unranked. See the ranking decision at the end of this
+     * function.
+     */
+    embedPublisherId?: string | null;
+  } = {},
 ): Promise<Outcome<{ payload: ActiveAttemptPayload }>> {
+
   const game = await getTodaysGame();
 
   /*
@@ -221,8 +232,12 @@ export async function startAttempt(
     // Restore an unfinished replay rather than starting a second clock.
     const open = await findOpenArchiveAttempt(archive.id, identity);
     if (open) return { ok: true, payload: await publicPayload(open, archive) };
-    return createAttempt(identity, archive, { ranked: false });
+    return createAttempt(identity, archive, {
+      ranked: false,
+      publisherId: options.embedPublisherId ?? null,
+    });
   }
+
 
   if (!game) {
     return { ok: false, code: 'no_game', message: 'No game is published for today.' };
@@ -247,17 +262,45 @@ export async function startAttempt(
         message: 'You have already played today’s game.',
       };
     }
-    return createAttempt(identity, game, { ranked: false });
+    return createAttempt(identity, game, {
+      ranked: false,
+      publisherId: options.embedPublisherId ?? null,
+    });
   }
 
-  return createAttempt(identity, game, { ranked: true });
+  /*
+   * RANKING, AND WHY AN EMBEDDED GUEST DOES NOT GET IT.
+   *
+   * A signed-in player is ranked wherever they play — the account is the
+   * identity and the usual one-ranked-game-a-day indexes hold.
+   *
+   * A *guest* inside a third-party embed is a different matter. Their only
+   * identity is a CHIPS-partitioned cookie (see embedCookieOptions in
+   * session.ts), which by design gives them a fresh id on every publisher
+   * site and none at all in Safari or Firefox. Ranking that would put scores
+   * on the public leaderboard that we cannot attribute, cannot deduplicate and
+   * cannot defend — one reader could farm the board by visiting three news
+   * sites, and we would have no way to tell that from three readers.
+   *
+   * So embedded guests play a real game that simply is not ranked, and the
+   * results screen invites them to sign in. That turns the weakness into the
+   * funnel: the leaderboard stays trustworthy and signing up is the thing that
+   * earns you a place on it.
+   */
+  const isEmbeddedGuest = Boolean(options.embedPublisherId) && !identity.userId;
+
+  return createAttempt(identity, game, {
+    ranked: !isEmbeddedGuest,
+    publisherId: options.embedPublisherId ?? null,
+  });
 }
 
 async function createAttempt(
   identity: Identity,
   game: GameRecord,
-  opts: { ranked: boolean },
+  opts: { ranked: boolean; publisherId?: string | null },
 ): Promise<Outcome<{ payload: ActiveAttemptPayload }>> {
+
   const id = crypto.randomUUID();
   const rounds = (game.rounds ?? []) as RoundRecord[];
   const publicRounds = toPublicRounds(rounds, id);
@@ -271,6 +314,8 @@ async function createAttempt(
       anonymous_session_id: identity.userId ? null : identity.anonId,
       mode: opts.ranked ? 'ranked' : 'practice',
       is_ranked: opts.ranked,
+      // Which embed this play came from; null when played on perkul.com.
+      publisher_id: opts.publisherId ?? null,
       rounds_total: rounds.length,
       option_order: buildOptionOrder(publicRounds),
       started_at: new Date().toISOString(),

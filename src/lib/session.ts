@@ -55,3 +55,41 @@ export const anonCookieOptions = {
   path: '/',
   maxAge: MAX_AGE,
 };
+
+/**
+ * The same cookie, for a player inside a third-party iframe.
+ *
+ * `SameSite=Lax` — correct and safe for our own site — is simply *not sent* by
+ * the browser in a cross-site frame. Left alone, an embedded player has no
+ * identity at all: they cannot keep their result and the one-ranked-game-a-day
+ * rule has nothing to key on. `None` is the only value that survives the trip,
+ * and it requires `Secure`.
+ *
+ * `Partitioned` (CHIPS) is deliberate rather than incidental. It gives each
+ * top-level publisher its own isolated jar, so this cookie can never be used to
+ * follow a reader from one news site to another — the thing third-party cookies
+ * are rightly distrusted for. We accept the cost that comes with it: the same
+ * human embedding on two different sites is two different anonymous players.
+ *
+ * That cost is affordable *because* embedded play is unranked until sign-in.
+ * Nothing on the public leaderboard depends on this cookie being unique per
+ * person; it only has to hold a game together for the length of a visit. The
+ * moment a player wants their name on the board they sign in through a popup on
+ * our own origin, where the ordinary first-party cookie above applies and the
+ * usual guarantees come back.
+ *
+ * Safari and Firefox block third-party cookies outright regardless of any of
+ * this, so the embed must still work when nothing is stored — treat a missing
+ * id as a fresh guest rather than an error.
+ */
+export const embedCookieOptions = {
+  name: ANON_COOKIE,
+  httpOnly: true,
+  sameSite: 'none' as const,
+  secure: true,
+  partitioned: true,
+  path: '/',
+  maxAge: MAX_AGE,
+};
+
+

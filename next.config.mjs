@@ -9,11 +9,27 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        /**
+         * Everything except the embed. `X-Frame-Options: SAMEORIGIN` is the
+         * right answer for the whole site and the wrong answer for a widget:
+         * it refuses all third-party framing and, because `ALLOW-FROM` is dead
+         * in every modern browser, it cannot express an allowlist at all.
+         *
+         * So `/embed/*` is excluded here and defends itself with a
+         * `Content-Security-Policy: frame-ancestors` computed per publisher at
+         * request time (see src/app/embed/layout.tsx). That is strictly
+         * stronger than XFO — it names the exact origins allowed to frame a
+         * given key, and the browser enforces it.
+         *
+         * Negative lookahead rather than two positive rules: a publisher who
+         * embeds must not be able to reach any other path of ours in a frame.
+         */
+        source: '/((?!embed).*)',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           // Two years, include subdomains. Vercel adds this automatically for
           // custom domains, but being explicit means local / preview deployments
