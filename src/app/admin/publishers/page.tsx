@@ -45,7 +45,7 @@ export default async function PublishersPage() {
           </label>
           <label className="field" style={{ width: '100%', maxWidth: '28rem' }}>
             <span className="field__label">Contact email</span>
-            <input type="email" name="contactEmail" placeholder="editor@example.com" />
+            <input type="email" name="contactEmail" placeholder="email@example.com" />
           </label>
           <label className="field" style={{ width: '100%', maxWidth: '28rem' }}>
             <span className="field__label">Allowed origins (one per line — https://example.com)</span>
