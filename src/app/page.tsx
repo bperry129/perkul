@@ -295,12 +295,10 @@ export default async function HomePage({
 
         {/* Outside the card, on the green. */}
         <AsSeenOn />
-        <div className="embed-nudge">
-          <Link href="/for-publishers">Embed this game on your website →</Link>
-        </div>
       </>
     );
   }
+
 
 
 
@@ -376,11 +374,6 @@ export default async function HomePage({
           progress; GameClient's body[data-playing] flag covers the case where
           the player presses start without a page load. */}
       {!active ? <AsSeenOn /> : null}
-      {!active ? (
-        <div className="embed-nudge">
-          <Link href="/for-publishers">Embed this game on your website →</Link>
-        </div>
-      ) : null}
 
 
       {/* JSON-LD structured data — rendered in the HTML, consumed by Google. */}

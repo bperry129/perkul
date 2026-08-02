@@ -419,10 +419,15 @@ code {
 body[data-playing] .asseenon { display: none; }
 
 
-/* A quiet, bottom-right nudge toward the publisher pitch, directly under the
-   white card — on the green, matching the masthead/colophon treatment rather
-   than the card's own type, so it reads as part of the page frame and not as
-   another button competing with "Start". */
+/* A quiet nudge toward the publisher pitch, directly under the white card on
+   every page — homepage (including mid-round), results, leaderboard, all of
+   it. Deliberately NOT gated by body[data-playing] like the press badge or
+   the bubbles: unlike those, this lives in the root layout below <main>, so it
+   sits under the card rather than inside the game surface, and it is meant to
+   be a permanent, always-there fixture rather than something that only shows
+   up between rounds. Right-aligned and quiet, on the green, matching the
+   masthead/colophon treatment rather than the card's own type, so it reads as
+   part of the page frame and never competes with the game itself. */
 .embed-nudge {
   width: 100%;
   max-width: 42rem;
@@ -447,9 +452,6 @@ body[data-playing] .asseenon { display: none; }
   text-underline-offset: 0.2em;
 }
 
-/* Same rule as the press badge and the ambient bubbles: nothing but the ten
-   words while the clock is running. */
-body[data-playing] .embed-nudge { display: none; }
 
 
 
