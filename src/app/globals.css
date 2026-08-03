@@ -1617,4 +1617,171 @@ html[data-embed] body {
   font-size: 0.82rem;
 }
 
+/* ============================================================================
+   MORE GAMES — /games hub cards + Press Your Luck
+   ============================================================================ */
+
+.game-cards {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+
+.game-card {
+  display: block;
+  padding: 1.2rem 1.4rem;
+  border-radius: var(--r-tile);
+  border: 2px solid var(--tile);
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--card);
+  transition: border-color var(--fast) linear, transform var(--fast) var(--ease);
+}
+.game-card:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+.game-card__title {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  margin: 0 0 0.3rem;
+  color: var(--ink);
+}
+.game-card__tagline {
+  color: var(--ink-soft);
+  margin: 0 0 0.6rem;
+  font-size: 0.92rem;
+}
+.game-card__cta {
+  font-weight: 800;
+  color: var(--brand-dark);
+  font-size: 0.86rem;
+}
+
+.pyl {
+  margin-top: 1.6rem;
+  padding: 1.8rem 1rem 1.5rem;
+  background: var(--paper-deep);
+  border-radius: var(--r-card);
+  text-align: center;
+}
+
+.pyl__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.pyl__score {
+  font-family: var(--serif);
+  font-size: 3.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pyl__score-label {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+
+/* A big, tactile arcade button. Colour rides the risk gradient computed in
+   PressYourLuckGame.tsx (green -> red); the layered box-shadow here gives it
+   a chunky 3D "push down" feel that matches the pill-button press style
+   already used on .action:active, just larger and rounder. */
+.pyl__button {
+  width: 9.5rem;
+  height: 9.5rem;
+  border-radius: 50%;
+  border: none;
+  color: #fff;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 90ms var(--ease), box-shadow 90ms var(--ease), background-color 200ms linear;
+  box-shadow:
+    0 10px 0 rgba(0, 0, 0, 0.18),
+    0 16px 28px rgba(0, 0, 0, 0.22),
+    inset 0 -8px 0 rgba(0, 0, 0, 0.12),
+    inset 0 6px 0 rgba(255, 255, 255, 0.25);
+}
+.pyl__button:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+.pyl__button:active,
+.pyl__button[data-pressed='true'] {
+  transform: translateY(9px);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.18),
+    0 4px 10px rgba(0, 0, 0, 0.22),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.12),
+    inset 0 3px 0 rgba(255, 255, 255, 0.2);
+}
+.pyl__button[data-busted='true'] {
+  animation: pyl-shake 0.5s ease;
+}
+.pyl__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+@keyframes pyl-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-2deg); }
+  40% { transform: translateX(6px) rotate(2deg); }
+  60% { transform: translateX(-4px) rotate(-1deg); }
+  80% { transform: translateX(4px) rotate(1deg); }
+}
+
+.pyl__meter {
+  width: 100%;
+  max-width: 20rem;
+}
+.pyl__meter-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+  margin-bottom: 0.35rem;
+}
+.pyl__meter-value {
+  font-family: var(--mono);
+  color: var(--ink);
+}
+.pyl__meter-track {
+  height: 0.65rem;
+  border-radius: var(--r-pill);
+  background: var(--rule);
+  overflow: hidden;
+}
+.pyl__meter-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width 160ms linear, background-color 160ms linear;
+}
+
+.pyl__toast {
+  margin: 1rem 0 0;
+  font-weight: 800;
+  color: var(--brand-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pyl__button {
+    transition: none !important;
+  }
+  .pyl__button[data-busted='true'] {
+    animation: none !important;
+  }
+}
+
 

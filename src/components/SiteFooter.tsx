@@ -16,6 +16,7 @@ export function SiteFooter() {
         </span>
         <Link href="/archive">Past Puzzles</Link>
         <Link href="/how-to-play">How to Play</Link>
+        <Link href="/games">More Games</Link>
         <Link href="/word-policy">Word Policy</Link>
         <Link href="/for-publishers">For Publishers</Link>
         <Link href="/privacy">Privacy</Link>

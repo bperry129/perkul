@@ -45,6 +45,7 @@ export async function SiteHeader() {
           */}
           <a href="/leaderboard">Leaderboard</a>
           <Link href="/how-to-play">How to play</Link>
+          <Link href="/games">More games</Link>
           {profile ? <Link href="/stats">Stats</Link> : null}
           {profile?.is_admin ? <Link href="/admin">Admin</Link> : null}
           <Link href={profile ? '/profile' : '/login'}>{profile ? 'Account' : 'Sign in'}</Link>
