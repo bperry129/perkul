@@ -62,7 +62,7 @@ export type OddsRow = {
 /** A fixed table for the "odds" section of the instructions — deterministic
  * and cheap, so it never needs a database round trip. */
 export function oddsTable(
-  scores: number[] = [5, 10, 15, 20, 25, 30, 40, 50, 60, 85],
+  scores: number[] = [5, 10, 15, 20, 25, 30, 35, 40],
 ): OddsRow[] {
   return scores.map((score) => ({
     score,
