@@ -1784,4 +1784,33 @@ html[data-embed] body {
   }
 }
 
+/* A bordered, high-contrast pill that makes the giveaway link impossible to
+   miss against the plain-text copy around it — distinct from .action--quiet,
+   which is deliberately understated everywhere else. */
+.giveaway-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  padding: 0.65rem 1.1rem;
+  border: 2px solid var(--yellow);
+  border-radius: var(--r-pill);
+  background: var(--yellow-tint);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: transform 120ms var(--ease), box-shadow 120ms var(--ease);
+  box-shadow: 0 3px 0 rgba(24, 60, 45, 0.08);
+}
+.giveaway-callout:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 10px rgba(24, 60, 45, 0.14);
+}
+.giveaway-callout:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+
 

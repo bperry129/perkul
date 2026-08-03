@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Press Your Luck',
   description:
-    'A one-button push-your-luck arcade game. Every press raises your score by one and the chance it all resets by one percentage point — capped at 85%, never a sure thing. Reach 31 while signed in to win a $25 Amazon gift card.',
+    'A one-button push-your-luck arcade game. Every press raises your score by one and the chance it all resets by one percentage point — capped at 85%, never a sure thing. Reach 35 while signed in to win a $25 Amazon gift card — one winner per day.',
   alternates: { canonical: '/games/press-your-luck' },
 };
 
@@ -49,9 +49,9 @@ export default async function PressYourLuckPage() {
         {MAX_BUST_CHANCE}%. There is no banking — press until you bust, then try again.
       </p>
 
-      <p style={{ marginTop: '-0.4rem' }}>
-        <a href="#giveaway" className="action--quiet">
-          Reach a score of {GIVEAWAY_SCORE} and win a $25 Amazon gift card — Click for details
+      <p style={{ marginTop: '0.2rem' }}>
+        <a href="#giveaway" className="giveaway-callout">
+          🎁 Reach a score of {GIVEAWAY_SCORE} and win a $25 Amazon gift card — Click for details
         </a>
       </p>
 
@@ -133,7 +133,7 @@ export default async function PressYourLuckPage() {
           </p>
           <ul style={{ paddingLeft: '1.2rem', marginTop: '0.8rem' }}>
             <li>
-              You must be <strong>signed in</strong> at the moment your score reaches{' '}
+          You must be <strong>signed in</strong> at the moment your score reaches{' '}
               {GIVEAWAY_SCORE} for it to count.{' '}
               {!isSignedIn ? (
                 <>
@@ -142,6 +142,12 @@ export default async function PressYourLuckPage() {
               ) : (
                 <>You&apos;re currently signed in — good to go.</>
               )}
+            </li>
+            <li>
+              <strong>Only one winner per day.</strong> The first person to reach{' '}
+              {GIVEAWAY_SCORE} on a given day wins that day&apos;s gift card — anyone else who
+              reaches it later the same day does not qualify. The clock resets the next day, so
+              there&apos;s a new chance to win every day.
             </li>
             <li>
               Play fair: runs must be the result of a real person pressing the button. Bots,

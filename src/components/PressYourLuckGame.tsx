@@ -9,22 +9,15 @@ import { BRAND } from '@/lib/brand';
  * the bottom of `/games/press-your-luck`. Kept here, not hard-coded twice,
  * so the button's own celebration message and the rules text can never
  * disagree about the number. */
-export const GIVEAWAY_SCORE = 31;
+export const GIVEAWAY_SCORE = 35;
 
-/**
- * A quality-random 0..100 roll for "did this press bust the run". Not
- * cryptographic-grade needed here — `crypto.getRandomValues` is used simply
- * because it's already the right tool sitting on `window`, with `Math.random`
- * as a fallback for any environment missing it.
- */
-function randomPercent(): number {
-  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
-    const buf = new Uint32Array(1);
-    window.crypto.getRandomValues(buf);
-    return (buf[0] / 0xffffffff) * 100;
-  }
-  return Math.random() * 100;
-}
+type PressResponse = {
+  ok: boolean;
+  busted?: boolean;
+  ignored?: boolean;
+  score?: number;
+  token?: string;
+};
 
 /** Green at zero risk, sliding to red as the bust chance climbs to its cap. */
 function riskColor(chancePercent: number): string {
@@ -34,6 +27,15 @@ function riskColor(chancePercent: number): string {
   return `hsl(${hue.toFixed(0)}, 68%, ${light.toFixed(0)}%)`;
 }
 
+/**
+ * The button only ever *asks* the server what happened; it never decides.
+ * See src/app/api/press-your-luck/press/route.ts — every roll, the bust
+ * decision, and the score itself are all authoritative there, not here.
+ * This component's own `bustChanceForScore` call below is display-only: it
+ * shows the player the same number the server is about to use, computed
+ * from the same shared, non-secret formula, but the server's roll is what
+ * actually decides the outcome.
+ */
 export function PressYourLuckGame({
   myBestScore,
   isSignedIn,
@@ -45,10 +47,11 @@ export function PressYourLuckGame({
   const [pressed, setPressed] = useState(false);
   const [busted, setBusted] = useState(false);
   const [sessionBest, setSessionBest] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [wonThisRun, setWonThisRun] = useState(false);
 
+  const tokenRef = useRef<string | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const timers = useRef<number[]>([]);
 
@@ -134,48 +137,56 @@ export function PressYourLuckGame({
     });
   }, [ensureAudio]);
 
-  const submitRun = useCallback(async (finalScore: number) => {
-    if (finalScore <= 0) return;
-    setSubmitting(true);
-    try {
-      await fetch('/api/press-your-luck/submit', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ score: finalScore, endedReason: 'bust' }),
-      });
-    } catch {
-      /* best effort — the run still happened for the player, just not the board */
-    } finally {
-      setSubmitting(false);
-    }
-  }, []);
+  const press = useCallback(async () => {
+    if (busted || busy) return;
 
-  const press = useCallback(() => {
-    if (busted || submitting) return;
-
+    setBusy(true);
     setPressed(true);
     schedule(() => setPressed(false), 110);
     playClick();
 
-    const chance = bustChanceForScore(score);
-    const roll = randomPercent();
+    try {
+      const res = await fetch('/api/press-your-luck/press', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: tokenRef.current }),
+      });
+      const data = (await res.json()) as PressResponse;
 
-    if (roll < chance) {
-      schedule(playBust, 70);
-      setBusted(true);
-      setMessage(`Busted at ${score}.`);
-      void submitRun(score);
-      schedule(() => {
-        setBusted(false);
+      if (!res.ok || !data.ok) {
+        // Session couldn't be verified (or something else went wrong
+        // server-side) — the only safe move is to start over, the same as
+        // if this had been the very first press.
+        tokenRef.current = null;
         setScore(0);
-        setWonThisRun(false);
-      }, 850);
-    } else {
-      const next = score + 1;
-      setScore(next);
-      setSessionBest((s) => Math.max(s, next));
+        setMessage('Something interrupted that run — press again to start fresh.');
+        return;
+      }
 
-      if (next === GIVEAWAY_SCORE && !wonThisRun) {
+      if (data.ignored) {
+        // Too fast to be a real press; state is unchanged.
+        return;
+      }
+
+      if (data.busted) {
+        schedule(playBust, 70);
+        setBusted(true);
+        setMessage(`Busted at ${data.score ?? score}.`);
+        tokenRef.current = null;
+        schedule(() => {
+          setBusted(false);
+          setScore(0);
+          setWonThisRun(false);
+        }, 850);
+        return;
+      }
+
+      const nextScore = data.score ?? score + 1;
+      tokenRef.current = data.token ?? null;
+      setScore(nextScore);
+      setSessionBest((s) => Math.max(s, nextScore));
+
+      if (nextScore === GIVEAWAY_SCORE && !wonThisRun) {
         setWonThisRun(true);
         playWin();
         setMessage(
@@ -184,8 +195,12 @@ export function PressYourLuckGame({
             : `You reached ${GIVEAWAY_SCORE} — but you need to be signed in to qualify for the prize. Sign in and do it again!`,
         );
       }
+    } catch {
+      setMessage('Network hiccup — press again.');
+    } finally {
+      setBusy(false);
     }
-  }, [busted, isSignedIn, playBust, playClick, playWin, schedule, score, submitRun, submitting, wonThisRun]);
+  }, [busted, busy, isSignedIn, playBust, playClick, playWin, schedule, score, wonThisRun]);
 
   const chance = bustChanceForScore(score);
   const color = riskColor(chance);
@@ -207,7 +222,7 @@ export function PressYourLuckGame({
           data-busted={busted}
           style={{ backgroundColor: busted ? 'var(--miss)' : color }}
           onClick={press}
-          disabled={submitting}
+          disabled={busy || busted}
           aria-label={busted ? 'Busted — resetting' : `Press. Current bust chance ${chance}%`}
         >
           <span className="pyl__button-label">{busted ? 'BUSTED' : 'PRESS'}</span>

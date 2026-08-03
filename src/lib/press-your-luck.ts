@@ -14,7 +14,7 @@ export type RunRow = {
   created_at: string;
 };
 
-function identityKey(identity: Identity): string | null {
+export function identityKey(identity: Identity): string | null {
   if (identity.userId) return `u:${identity.userId}`;
   if (identity.anonId) return `a:${identity.anonId}`;
   return null;
@@ -139,4 +139,54 @@ export async function getMyBest(identity: Identity): Promise<{ score: number; ra
     .gt('score', myBest.score);
 
   return { score: myBest.score, rank: Number(count ?? 0) + 1 };
+}
+
+/**
+ * Bumps this player's activity counter for today by one press — total
+ * presses, total busts (== total runs, now that banking is gone), and which
+ * UTC hour this press fell in. Purely an admin/analytics aid (see
+ * `/admin/press-your-luck` and the migration comment on
+ * `press_your_luck_activity`); never read by gameplay logic, so a failure
+ * here is swallowed rather than allowed to break a press.
+ *
+ * A read-then-upsert, not a single atomic increment: at the traffic this
+ * game sees (one browser tab pressing sequentially, awaiting each response)
+ * the race window is negligible, and it avoids needing a database function
+ * just to add small integers together.
+ */
+export async function recordPressActivity(identity: Identity, busted: boolean): Promise<void> {
+  const key = identityKey(identity);
+  if (!key) return;
+
+  try {
+    const db = serviceClient();
+    const now = new Date();
+    const activityDate = now.toISOString().slice(0, 10);
+    const hour = now.getUTCHours();
+
+    const { data: existing } = await db
+      .from('press_your_luck_activity')
+      .select('presses, busts, hours_bitmask')
+      .eq('identity_key', key)
+      .eq('activity_date', activityDate)
+      .maybeSingle();
+
+    const row = existing as { presses: number; busts: number; hours_bitmask: number } | null;
+
+    await db.from('press_your_luck_activity').upsert(
+      {
+        identity_key: key,
+        user_id: identity.userId,
+        anonymous_session_id: identity.userId ? null : identity.anonId,
+        activity_date: activityDate,
+        presses: (row?.presses ?? 0) + 1,
+        busts: (row?.busts ?? 0) + (busted ? 1 : 0),
+        hours_bitmask: (row?.hours_bitmask ?? 0) | (1 << hour),
+        last_press_at: now.toISOString(),
+      },
+      { onConflict: 'identity_key,activity_date' },
+    );
+  } catch {
+    /* analytics only — never let this fail a real press */
+  }
 }
