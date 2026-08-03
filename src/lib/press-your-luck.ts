@@ -142,21 +142,27 @@ export async function getMyBest(identity: Identity): Promise<{ score: number; ra
 }
 
 /**
- * Bumps this player's activity counter for today by one press — total
- * presses, total busts (== total runs, now that banking is gone), and which
- * UTC hour this press fell in. Purely an admin/analytics aid (see
- * `/admin/press-your-luck` and the migration comment on
- * `press_your_luck_activity`); never read by gameplay logic, so a failure
- * here is swallowed rather than allowed to break a press.
+ * Bumps this player's daily activity counters — total presses, total busts
+ * (== total runs, now that banking is gone), and which UTC hour this update
+ * fell in. Purely an admin/analytics aid (see `/admin/press-your-luck` and
+ * the migration comment on `press_your_luck_activity`); never read by
+ * gameplay logic, so a failure here is swallowed rather than allowed to
+ * break a press.
+ *
+ * Called once per *run* (at the bust), not once per press: individual
+ * successful presses never touch the database at all (see the comment in
+ * `src/app/api/press-your-luck/press/route.ts` on why that matters for
+ * responsiveness), so `pressCount` carries the whole run's press total —
+ * `score + 1`, the final busting press included — in one write instead of
+ * one write per press.
  *
  * A read-then-upsert, not a single atomic increment: at the traffic this
- * game sees (one browser tab pressing sequentially, awaiting each response)
- * the race window is negligible, and it avoids needing a database function
- * just to add small integers together.
+ * game sees the race window is negligible, and it avoids needing a database
+ * function just to add small integers together.
  */
-export async function recordPressActivity(identity: Identity, busted: boolean): Promise<void> {
+export async function recordPressActivity(identity: Identity, pressCount: number): Promise<void> {
   const key = identityKey(identity);
-  if (!key) return;
+  if (!key || pressCount <= 0) return;
 
   try {
     const db = serviceClient();
@@ -179,8 +185,8 @@ export async function recordPressActivity(identity: Identity, busted: boolean): 
         user_id: identity.userId,
         anonymous_session_id: identity.userId ? null : identity.anonId,
         activity_date: activityDate,
-        presses: (row?.presses ?? 0) + 1,
-        busts: (row?.busts ?? 0) + (busted ? 1 : 0),
+        presses: (row?.presses ?? 0) + pressCount,
+        busts: (row?.busts ?? 0) + 1,
         hours_bitmask: (row?.hours_bitmask ?? 0) | (1 << hour),
         last_press_at: now.toISOString(),
       },

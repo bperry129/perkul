@@ -47,13 +47,20 @@ export function PressYourLuckGame({
   const [pressed, setPressed] = useState(false);
   const [busted, setBusted] = useState(false);
   const [sessionBest, setSessionBest] = useState(0);
-  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [wonThisRun, setWonThisRun] = useState(false);
 
   const tokenRef = useRef<string | null>(null);
+  const scoreRef = useRef(0);
+  const bustedRef = useRef(false);
+  const wonRef = useRef(false);
+  // Clicks buffer here while a request is in flight, instead of disabling
+  // the button — see the `press` callback below for why.
+  const queuedRef = useRef(0);
+  const sendingRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const timers = useRef<number[]>([]);
+
 
   useEffect(() => {
     return () => {
@@ -137,19 +144,23 @@ export function PressYourLuckGame({
     });
   }, [ensureAudio]);
 
-  const press = useCallback(async () => {
-    if (busted || busy) return;
-
-    setBusy(true);
-    setPressed(true);
-    schedule(() => setPressed(false), 110);
-    playClick();
+  /**
+   * Sends exactly one press to the server and applies its result, then — if
+   * more clicks piled up while this request was in flight — immediately
+   * sends the next one. This is a pipeline, not a lock: nothing here ever
+   * makes the player wait for a round trip before their next click counts.
+   * A physical arcade button doesn't get slower the faster you hit it, and
+   * this shouldn't either.
+   */
+  const sendNext = useCallback(async () => {
+    sendingRef.current = true;
+    const tokenAtSend = tokenRef.current;
 
     try {
       const res = await fetch('/api/press-your-luck/press', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token: tokenRef.current }),
+        body: JSON.stringify({ token: tokenAtSend }),
       });
       const data = (await res.json()) as PressResponse;
 
@@ -158,35 +169,45 @@ export function PressYourLuckGame({
         // server-side) — the only safe move is to start over, the same as
         // if this had been the very first press.
         tokenRef.current = null;
+        scoreRef.current = 0;
+        queuedRef.current = 0;
         setScore(0);
         setMessage('Something interrupted that run — press again to start fresh.');
         return;
       }
 
       if (data.ignored) {
-        // Too fast to be a real press; state is unchanged.
+        // Too fast to be a real press; state is unchanged. Still counts
+        // against the queue so the pipeline keeps draining.
         return;
       }
 
       if (data.busted) {
         schedule(playBust, 70);
+        bustedRef.current = true;
+        queuedRef.current = 0;
         setBusted(true);
-        setMessage(`Busted at ${data.score ?? score}.`);
+        setMessage(`Busted at ${data.score ?? scoreRef.current}.`);
         tokenRef.current = null;
         schedule(() => {
+          bustedRef.current = false;
+          wonRef.current = false;
+          scoreRef.current = 0;
           setBusted(false);
           setScore(0);
           setWonThisRun(false);
-        }, 850);
+        }, 500);
         return;
       }
 
-      const nextScore = data.score ?? score + 1;
+      const nextScore = data.score ?? scoreRef.current + 1;
       tokenRef.current = data.token ?? null;
+      scoreRef.current = nextScore;
       setScore(nextScore);
       setSessionBest((s) => Math.max(s, nextScore));
 
-      if (nextScore === GIVEAWAY_SCORE && !wonThisRun) {
+      if (nextScore === GIVEAWAY_SCORE && !wonRef.current) {
+        wonRef.current = true;
         setWonThisRun(true);
         playWin();
         setMessage(
@@ -198,9 +219,29 @@ export function PressYourLuckGame({
     } catch {
       setMessage('Network hiccup — press again.');
     } finally {
-      setBusy(false);
+      sendingRef.current = false;
+      if (queuedRef.current > 0 && !bustedRef.current) {
+        queuedRef.current -= 1;
+        void sendNext();
+      }
     }
-  }, [busted, busy, isSignedIn, playBust, playClick, playWin, schedule, score, wonThisRun]);
+  }, [isSignedIn, playBust, playWin, schedule]);
+
+  const press = useCallback(() => {
+    if (bustedRef.current) return;
+
+    // Immediate, network-independent feedback on every click.
+    setPressed(true);
+    schedule(() => setPressed(false), 110);
+    playClick();
+
+    if (sendingRef.current) {
+      queuedRef.current += 1;
+      return;
+    }
+    void sendNext();
+  }, [playClick, schedule, sendNext]);
+
 
   const chance = bustChanceForScore(score);
   const color = riskColor(chance);
@@ -222,7 +263,7 @@ export function PressYourLuckGame({
           data-busted={busted}
           style={{ backgroundColor: busted ? 'var(--miss)' : color }}
           onClick={press}
-          disabled={busy || busted}
+          disabled={busted}
           aria-label={busted ? 'Busted — resetting' : `Press. Current bust chance ${chance}%`}
         >
           <span className="pyl__button-label">{busted ? 'BUSTED' : 'PRESS'}</span>

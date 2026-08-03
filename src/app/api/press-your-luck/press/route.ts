@@ -21,13 +21,25 @@ export const dynamic = 'force-dynamic';
  * rather than a server-side session store — no database write is needed just
  * to hold "score so far" between one press and the next, and the signature
  * makes tampering with it pointless.
+ *
+ * The *successful*-press path below does no I/O at all beyond the crypto: no
+ * auth lookup, no database read or write. That's deliberate, not an
+ * oversight — a first version of this route resolved the player's identity
+ * and wrote an activity row on every single press, which meant every press
+ * paid for a round trip to Supabase auth plus a read-then-upsert before the
+ * button could respond. For a one-button arcade game where players expect
+ * to hammer it as fast as they can click, that latency was the whole game
+ * feeling sluggish. None of that work is actually needed to decide whether
+ * *this* press busts — only the score and the clock, both already inside
+ * the signed token — so it only happens once per run, at the one moment
+ * that truly needs a database row: the bust itself.
  */
 
 /** Below this gap between presses, treat the request as too fast to be a
  * real button push and ignore it without changing anything. Comfortably
  * below normal human reaction/press cadence, but enough to blunt a naive
  * autoclicker or script firing requests back-to-back. */
-const MIN_INTERVAL_MS = 120;
+const MIN_INTERVAL_MS = 60;
 
 function randomPercent(): number {
   const buf = new Uint32Array(1);
@@ -68,18 +80,19 @@ export async function POST(request: Request) {
   const chance = bustChanceForScore(score);
   const busted = randomPercent() < chance;
 
-  const { identity, freshAnonId } = await resolveIdentity();
-
-  if (busted) {
-    await recordRun(identity, score, 'bust');
-    await recordPressActivity(identity, true);
-    return attachAnonCookie(json({ ok: true, busted: true, score }), freshAnonId);
+  if (!busted) {
+    // The fast path: no auth lookup, no database call. Just the next token.
+    const nextScore = score + 1;
+    const token = signRunToken({ s: nextScore, t: now, n: nonce });
+    return json({ ok: true, busted: false, score: nextScore, token });
   }
 
-  await recordPressActivity(identity, false);
-  const nextScore = score + 1;
-  const token = signRunToken({ s: nextScore, t: now, n: nonce });
-  return attachAnonCookie(json({ ok: true, busted: false, score: nextScore, token }), freshAnonId);
+  // Only a bust needs to know who was playing — this is the one write per
+  // run, not per press.
+  const { identity, freshAnonId } = await resolveIdentity();
+  await recordRun(identity, score, 'bust');
+  await recordPressActivity(identity, score + 1);
+  return attachAnonCookie(json({ ok: true, busted: true, score }), freshAnonId);
 }
 
 // The old client-submits-a-final-score route is gone. Keeping a POST-only
