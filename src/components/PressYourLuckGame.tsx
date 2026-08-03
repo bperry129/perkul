@@ -1,7 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { bustChanceForScore, MAX_BUST_CHANCE } from '@/lib/press-your-luck-math';
+import { BRAND } from '@/lib/brand';
+
+/** The score that wins the $25 Amazon gift card — see the giveaway rules at
+ * the bottom of `/games/press-your-luck`. Kept here, not hard-coded twice,
+ * so the button's own celebration message and the rules text can never
+ * disagree about the number. */
+export const GIVEAWAY_SCORE = 31;
 
 /**
  * A quality-random 0..100 roll for "did this press bust the run". Not
@@ -26,13 +34,20 @@ function riskColor(chancePercent: number): string {
   return `hsl(${hue.toFixed(0)}, 68%, ${light.toFixed(0)}%)`;
 }
 
-export function PressYourLuckGame({ myBestScore }: { myBestScore: number | null }) {
+export function PressYourLuckGame({
+  myBestScore,
+  isSignedIn,
+}: {
+  myBestScore: number | null;
+  isSignedIn: boolean;
+}) {
   const [score, setScore] = useState(0);
   const [pressed, setPressed] = useState(false);
   const [busted, setBusted] = useState(false);
   const [sessionBest, setSessionBest] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [wonThisRun, setWonThisRun] = useState(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const timers = useRef<number[]>([]);
@@ -99,34 +114,34 @@ export function PressYourLuckGame({ myBestScore }: { myBestScore: number | null 
     osc.stop(now + 0.46);
   }, [ensureAudio]);
 
-  /** A bright chime for a voluntary bank. */
-  const playBank = useCallback(() => {
+  /** A bright chime the instant a run reaches the giveaway score. */
+  const playWin = useCallback(() => {
     const ctx = ensureAudio();
     if (!ctx) return;
     if (ctx.state === 'suspended') void ctx.resume();
     const now = ctx.currentTime;
-    [520, 780].forEach((freq, i) => {
+    [520, 660, 880].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + i * 0.06);
-      gain.gain.setValueAtTime(0.12, now + i * 0.06);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.06 + 0.22);
+      osc.frequency.setValueAtTime(freq, now + i * 0.09);
+      gain.gain.setValueAtTime(0.13, now + i * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.09 + 0.3);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(now + i * 0.06);
-      osc.stop(now + i * 0.06 + 0.24);
+      osc.start(now + i * 0.09);
+      osc.stop(now + i * 0.09 + 0.32);
     });
   }, [ensureAudio]);
 
-  const submitRun = useCallback(async (finalScore: number, endedReason: 'bust' | 'banked') => {
+  const submitRun = useCallback(async (finalScore: number) => {
     if (finalScore <= 0) return;
     setSubmitting(true);
     try {
       await fetch('/api/press-your-luck/submit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ score: finalScore, endedReason }),
+        body: JSON.stringify({ score: finalScore, endedReason: 'bust' }),
       });
     } catch {
       /* best effort — the run still happened for the player, just not the board */
@@ -149,25 +164,28 @@ export function PressYourLuckGame({ myBestScore }: { myBestScore: number | null 
       schedule(playBust, 70);
       setBusted(true);
       setMessage(`Busted at ${score}.`);
-      void submitRun(score, 'bust');
+      void submitRun(score);
       schedule(() => {
         setBusted(false);
         setScore(0);
+        setWonThisRun(false);
       }, 850);
     } else {
       const next = score + 1;
       setScore(next);
       setSessionBest((s) => Math.max(s, next));
-    }
-  }, [busted, playBust, playClick, schedule, score, submitRun, submitting]);
 
-  const bank = useCallback(() => {
-    if (score === 0 || busted || submitting) return;
-    playBank();
-    setMessage(`Banked ${score}.`);
-    void submitRun(score, 'banked');
-    setScore(0);
-  }, [busted, playBank, score, submitRun, submitting]);
+      if (next === GIVEAWAY_SCORE && !wonThisRun) {
+        setWonThisRun(true);
+        playWin();
+        setMessage(
+          isSignedIn
+            ? `You reached ${GIVEAWAY_SCORE}! Email ${BRAND.email} from your account's address to claim your $25 Amazon gift card.`
+            : `You reached ${GIVEAWAY_SCORE} — but you need to be signed in to qualify for the prize. Sign in and do it again!`,
+        );
+      }
+    }
+  }, [busted, isSignedIn, playBust, playClick, playWin, schedule, score, submitRun, submitting, wonThisRun]);
 
   const chance = bustChanceForScore(score);
   const color = riskColor(chance);
@@ -209,13 +227,7 @@ export function PressYourLuckGame({ myBestScore }: { myBestScore: number | null 
         </div>
       </div>
 
-      <div className="toolbar" style={{ marginTop: '1.2rem', justifyContent: 'center' }}>
-        <button type="button" className="action" onClick={bank} disabled={score === 0 || busted || submitting}>
-          {score > 0 ? `Bank ${score} & reset` : 'Bank & reset'}
-        </button>
-      </div>
-
-      <p className="label" style={{ marginTop: '0.8rem', textAlign: 'center' }}>
+      <p className="label" style={{ marginTop: '1.2rem', textAlign: 'center' }}>
         Session best: {sessionBest}
         {myBestScore != null ? <> · Your all-time best: {myBestScore}</> : null}
       </p>
@@ -223,6 +235,12 @@ export function PressYourLuckGame({ myBestScore }: { myBestScore: number | null 
       {message ? (
         <p className="pyl__toast" role="status">
           {message}
+          {!isSignedIn && wonThisRun ? (
+            <>
+              {' '}
+              <Link href="/login">Sign in →</Link>
+            </>
+          ) : null}
         </p>
       ) : null}
     </section>

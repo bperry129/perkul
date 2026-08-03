@@ -4,11 +4,11 @@ import { Baloo_2, Nunito, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND } from '@/lib/brand';
 import { ADSENSE_CLIENT } from '@/lib/adsense';
-import Link from 'next/link';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { StatCounter } from '@/components/StatCounter';
 import { AmbientBubbles } from '@/components/AmbientBubbles';
+import { EmbedNudge } from '@/components/EmbedNudge';
 
 
 /**
@@ -145,11 +145,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         ) : null}
         <main>{children}</main>
-        {!isEmbed ? (
-          <div className="embed-nudge">
-            <Link href="/for-publishers">Embed this game on your website →</Link>
-          </div>
-        ) : null}
+        {!isEmbed ? <EmbedNudge /> : null}
         {!isEmbed ? (
           <>
             <SiteFooter />
