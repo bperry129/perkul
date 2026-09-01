@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { listGameBank, getRunway } from '@/lib/games';
 import { formatGameDate } from '@/lib/time';
 import { padGameNumber } from '@/lib/brand';
+import { publishAllNeedsReviewAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function GameBankPage() {
   const [rows, runway] = await Promise.all([listGameBank(), getRunway()]);
+  const needsReviewCount = rows.filter((row) => row.status === 'needs_review').length;
 
   return (
     <div>
@@ -20,7 +22,20 @@ export default async function GameBankPage() {
         <Link className="action action--ghost" href="/admin/games/generate">
           Generate next bank prompt
         </Link>
+        {needsReviewCount > 0 ? (
+          <form action={publishAllNeedsReviewAction} style={{ display: 'inline' }}>
+            <button
+              type="submit"
+              className="action"
+              style={{ background: '#b45309', borderColor: '#b45309' }}
+              title="Publishes every needs_review game as-is, ignoring validator errors. Use after you've reviewed the import and are okay with any flagged issues (e.g. reused words)."
+            >
+              Publish all {needsReviewCount} needs_review games
+            </button>
+          </form>
+        ) : null}
       </div>
+
 
       <table className="table">
         <thead>

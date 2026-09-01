@@ -216,6 +216,55 @@ export async function deleteGameAction(formData: FormData) {
   redirect('/admin/games');
 }
 
+/**
+ * Bulk editorial override: publish every game currently sitting in
+ * needs_review, regardless of validator errors. This is the "I reviewed the
+ * import, the errors are noise (reused words etc.), just get it live" button —
+ * useful right after a big import instead of forcing each game open one by one.
+ * Still fully logged so the override is auditable.
+ */
+export async function publishAllNeedsReviewAction() {
+  const adminId = await guard();
+
+  const { data } = await serviceClient()
+    .from('games')
+    .select('id, active_date')
+    .eq('status', 'needs_review');
+
+  const rows = (data ?? []) as Array<{ id: string; active_date: string }>;
+  const { flagEnabled } = await import('@/lib/flags');
+  const simulatedDataOn = await flagEnabled('simulated_data');
+
+  let published = 0;
+  for (const row of rows) {
+    await setGameStatus(row.id, 'published');
+    published += 1;
+
+    if (simulatedDataOn) {
+      const existing = await countSimulatedAttempts(row.id);
+      if (existing === 0) {
+        const count = 200 + Math.floor(Math.random() * 301);
+        try {
+          await generateSimulatedAttempts(row.id, count);
+        } catch {
+          // Non-fatal: game still publishes even if dummy generation fails.
+        }
+      }
+    }
+  }
+
+  await logAdminAction(adminId, 'game.publish_all_needs_review', 'game', null, {
+    published,
+    forced: true,
+  });
+
+  revalidatePath('/admin/games');
+  revalidatePath('/admin/dummy-players');
+  revalidatePath('/');
+  revalidatePath('/leaderboard');
+}
+
+
 /* -------------------------------------------------------------------------- */
 /* Generation + import                                                         */
 /* -------------------------------------------------------------------------- */
