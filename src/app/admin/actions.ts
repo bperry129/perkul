@@ -52,8 +52,11 @@ export async function setGameStatusAction(formData: FormData) {
   const adminId = await guard();
   const gameId = str(formData, 'gameId');
   const status = str(formData, 'status') as GameStatus;
+  // Editorial override: lets an admin push a game to ready/published despite
+  // validator errors (e.g. a reused word) after consciously acknowledging it.
+  const force = formData.get('force') === 'true';
 
-  if (status === 'ready' || status === 'published') {
+  if ((status === 'ready' || status === 'published') && !force) {
     const game = await getGameWithRounds(gameId);
     if (!game) throw new Error('Game not found.');
     const draft = gameRecordToDraft(game);
@@ -65,7 +68,8 @@ export async function setGameStatusAction(formData: FormData) {
   }
 
   await setGameStatus(gameId, status);
-  await logAdminAction(adminId, 'game.status', 'game', gameId, { status });
+  await logAdminAction(adminId, 'game.status', 'game', gameId, { status, forced: force });
+
 
   // Auto-generate dummy players when a game is published.
   if (status === 'published') {

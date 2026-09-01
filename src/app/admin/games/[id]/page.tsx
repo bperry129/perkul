@@ -116,6 +116,42 @@ export default async function GameEditorPage({
         needs_review.
       </p>
 
+      {/* ---------------------------------------- force override (bypass validator) */}
+      {!report.ok ? (
+        <div
+          className="toolbar"
+          style={{
+            marginTop: '0.75rem',
+            border: '1px solid #b45309',
+            borderRadius: '0.5rem',
+            padding: '0.75rem',
+            background: '#fffbeb',
+          }}
+        >
+          <span className="label" style={{ margin: 0, color: '#92400e' }}>
+            ⚠ This game has validator errors. You can override and force the status change
+            anyway — do this deliberately, not by habit.
+          </span>
+          {(['ready', 'published'] as const)
+            .filter((next) => game.status !== next)
+            .map((next) => (
+              <form action={setGameStatusAction} key={`force-${next}`}>
+                <input type="hidden" name="gameId" value={game.id} />
+                <input type="hidden" name="status" value={next} />
+                <input type="hidden" name="force" value="true" />
+                <button
+                  type="submit"
+                  className="action--quiet"
+                  style={{ borderColor: '#b45309', color: '#92400e' }}
+                >
+                  Force {next === 'published' ? 'publish' : 'ready'} anyway
+                </button>
+              </form>
+            ))}
+        </div>
+      ) : null}
+
+
       {/* ------------------------------------------------------ player preview */}
       <details className="expand" style={{ margin: '1.5rem 0' }}>
         <summary>Preview the player experience</summary>
